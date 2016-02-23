@@ -4,7 +4,7 @@
 LASTSENT=""
 BASEURL="http://192.168.1.76"
 PORT=8080
-ENDPOINT="/image"
+ENDPOINT="/imageUpload"
 while [ 1 ]
 do
 	LATEST=$(ls photos | sort -rn | head -n1)
