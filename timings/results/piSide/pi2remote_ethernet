@@ -1,0 +1,24 @@
+Name: testPhotos/1280x720_default.jpg        Size: 471200
+4138,4003,4102,4033,4005,4010,4025,4001,4001,4008,
+Average Upload: 4032 milliseconds
+
+Name: testPhotos/1920x1080_default.jpg        Size: 1134157
+9503,19827,9359,9489,9329,9349,9334,9344,9343,9442,
+Average Upload: 10431 milliseconds
+
+Name: testPhotos/320x200_default.jpg        Size: 51378
+636,633,646,15662,629,625,629,659,634,630,
+Average Upload: 2138 milliseconds
+
+Name: testPhotos/640x480_default.jpg        Size: 171966
+1604,1597,1603,1669,1599,1595,1599,1595,1601,1597,
+Average Upload: 1605 milliseconds
+
+Name: testPhotos/640x480_high.jpg        Size: 166562
+7041,8616,1665,15662,1553,1554,1563,1568,1551,1553,
+Average Upload: 4232 milliseconds
+
+Name: testPhotos/640x480_low.jpg        Size: 31063
+583,463,464,464,468,467,581,460,463,463,
+Average Upload: 487 milliseconds
+

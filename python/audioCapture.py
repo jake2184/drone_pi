@@ -11,9 +11,11 @@ import time
 
 
 THRESHOLD = 1000
-CHUNK_SIZE = 1024
+#CHUNK_SIZE = 1024
+CHUNK_SIZE = 8192
 FORMAT = pyaudio.paInt16
 RATE = 44100
+#RATE = 48000
 
 def is_silent(snd_data):
     "Returns 'True' if below the 'silent' threshold"
