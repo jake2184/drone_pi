@@ -1,1 +1,4 @@
 photos
+audio
+*.pyc
+*.log
