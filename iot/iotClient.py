@@ -41,8 +41,8 @@ class iotClient:
 	def startPings(self):
 		threading.Timer(10.0, self.startPings).start()
 		# Send ping
-		pingMessage = {'id' : 'drone'}
-		self.client.publishEvent(event="status", msgFormat="json", data=pingMessage)
+		pingMessage = {'temp' : '24'}
+		self.client.publishEvent("status","json", pingMessage)
 		print "Ping "
 
 if __name__ == '__main__':
