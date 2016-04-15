@@ -4,8 +4,8 @@ import requests
 from os import listdir
 import time
 
-def send_latest_audio(url, port):
-    endPoint="/speechUpload"
+def send_latest_audio(url, port, sessionCookie):
+    endPoint="/speechUploadSecure"
     lastSent = "";
 
     while True:
@@ -15,13 +15,13 @@ def send_latest_audio(url, port):
 
             if file != lastSent:
                 files = {'audio':open("audio/"+file)}
-                req = requests.post(url+port+endPoint, files=files)
+                req = requests.post(url+port+endPoint, files=files, cookies=sessionCookie)
                 lastSent = file
 
         time.sleep(1)
 
-def send_latest_image(url, port):
-    endPoint="/imageUpload"
+def send_latest_image(url, port, sessionCookie):
+    endPoint="/imageUploadSecure"
     lastSent = "";
 
     while True:
@@ -31,7 +31,7 @@ def send_latest_image(url, port):
 
             if file != lastSent:
                 files = {'image':open("photos/"+file)}
-                req = requests.post(url+port+endPoint, files=files)
+                req = requests.post(url+port+endPoint, files=files, cookies=sessionCookie)
                 lastSent = file
 
         time.sleep(1)

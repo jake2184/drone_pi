@@ -16,7 +16,7 @@ class iotClient:
 			#self.startPings()
 
 			while True:
-				print "Sending sensors"
+				print ("Sending sensors")
 				sensorReadings = { \
 				'time' : int(time.time() * 1000), \
 				'location' : [gps.latitude, gps.longitude], \
@@ -31,7 +31,7 @@ class iotClient:
 
 
 		except ibmiotf.ConnectionException as e:
-			print e
+			print (e)
 
 
 	def commandCallback(self, cmd):
@@ -51,7 +51,7 @@ class iotClient:
 
 
 		elif cmd.command == "else":
-			print cmd.command
+			print (cmd.command)
 		else:
 			print ("Unknown command: " % cmd.command)
 
@@ -60,8 +60,8 @@ class iotClient:
 		# Send ping
 		pingMessage = {'temp' : '24'}
 		self.client.publishEvent("ping","json", pingMessage)
-		print "Ping "
+		print ("Ping ")
 
 if __name__ == '__main__':
 	iotClient("config.conf")
-	print "Waiting.."
+	print ("Waiting..")

@@ -10,7 +10,7 @@ import wave
 import time
 
 
-THRESHOLD = 1000
+THRESHOLD = 500
 #CHUNK_SIZE = 1024
 CHUNK_SIZE = 8192
 FORMAT = pyaudio.paInt16
@@ -90,7 +90,7 @@ def record():
         r.extend(snd_data)
 
         silent = is_silent(snd_data)
-
+        #print(silent)
         if silent and snd_started:
             num_silent += 1
         elif not silent and not snd_started:
