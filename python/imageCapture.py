@@ -25,6 +25,6 @@ def takePhotos(interval):
             ' -t 1 ' + \
             ' -w ' + str(photoWidth) + \
             ' -h ' + str(photoHeight)
-        #pid = subprocess.call(cmd, shell=True)
-
+        pid = subprocess.call(cmd, shell=True)
+	print("Took image.")
         time.sleep(interval)
