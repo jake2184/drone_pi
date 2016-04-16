@@ -31,6 +31,11 @@ def send_latest_image(url, port, sessionCookie):
     while True:
         fileList = listdir("photos")
         if fileList:
+            for file in fileList:
+                if file.endswith('~'):
+                    print("Tempt")
+                    fileList.remove(file)
+
             file = max(fileList)
 
             if file != lastSent:

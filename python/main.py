@@ -8,7 +8,6 @@ from imageCapture import takePhotos
 import time, sys
 import requests
 from requests.auth import HTTPBasicAuth
-from MA
 
 class GPS:
 
@@ -45,7 +44,7 @@ if __name__ == '__main__':
 
 	# Check we can connect to Bluemix
 	try:
-		req = requests.get(url + port + "/login");
+		req = requests.get(url + port + "/login", timeout=2);
 	except requests.exceptions.RequestException:
 		print ("Cannot connect to " + url + port)
 		sys.exit(0)
