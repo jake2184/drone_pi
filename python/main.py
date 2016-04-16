@@ -8,6 +8,7 @@ from imageCapture import takePhotos
 import time, sys
 import requests
 from requests.auth import HTTPBasicAuth
+from MA
 
 class GPS:
 
@@ -16,14 +17,17 @@ class GPS:
         self.latitude = 0.0
         self.longitude = 0.0
 
+
 class Sensors:
     def __init__(self):
         self.temperature = 0.0
         self.airPurity = 0
         self.altitude = 0
 
+
 def runIot(gps, sensors, commandList):
     client = iotClient("python/iot/config.conf", gps, sensors, commandList)
+
 
 def runAudioCapture():
     while True:
