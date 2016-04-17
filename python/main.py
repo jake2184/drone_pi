@@ -80,7 +80,7 @@ if __name__ == '__main__':
 	photoInterval = 1
 	imageThread = threading.Thread(target=takePhotos, args=(photoInterval,))
 	imageThread.daemon = True
-	imageThread.start()
+	#imageThread.start()
 
 	# Thread to capture audio
 	audioThread = threading.Thread(target=runAudioCapture)
@@ -90,7 +90,7 @@ if __name__ == '__main__':
 	# Thread to upload images
 	imageUploadThread = threading.Thread(target=send_latest_image, args=(url, port, sessionCookie, gps, GPSLock))
 	imageUploadThread.daemon = True
-	imageUploadThread.start()
+	#imageUploadThread.start()
 
 	# Thread to upload audio
 	audioUploadThread = threading.Thread(target=send_latest_audio, args=(url, port, sessionCookie, gps, GPSLock))

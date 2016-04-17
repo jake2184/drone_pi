@@ -122,7 +122,7 @@ def writeMP3File(fileName, data):
 	   "-f", 's16le', # means 16bit input
 	   "-acodec", "pcm_s16le", # means raw 16bit input
 	   '-r', "44100", # the input will have 44100 Hz
-	   '-ac','1', # the input will have 2 channels (stereo)
+	   '-ac','1', # the input will have 1 channels (stereo)
 	   '-i', '-', # means that the input will arrive from the pipe
 	   '-vn', # means "don't expect any video input"
 		fileName
