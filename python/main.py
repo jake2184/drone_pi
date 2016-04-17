@@ -6,7 +6,7 @@ from iot.client import runIot
 from audioCapture import record_to_file
 from fileSend import send_latest_image, send_latest_audio
 from imageCapture import takePhotos
-from mavConnection import mavLoop
+from mavconnection import mavLoop
 
 import time, sys
 import requests
