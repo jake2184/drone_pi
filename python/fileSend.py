@@ -5,50 +5,58 @@ from os import listdir
 import time
 
 
-def send_latest_audio(url, port, sessionCookie, gps):
+def send_latest_audio(url, port, sessionCookie, gps, GPSLock):
 	endPoint="/speechUploadSecure"
 	lastSent = ""
 
 	while True:
 		fileList = listdir("audio")
 		if fileList:
-			file = max(fileList)
+			fileToSend = max(fileList)
 
-			if file != lastSent:
-				files = {'audio':open("audio/"+file)}
-				req = requests.post(url+port+endPoint, data=gps, files=files, cookies=sessionCookie)
+			if fileToSend != lastSent:
+				files = {'audio':open("audio/" + fileToSend)}
+
+				with GPSLock:
+					GPSData = gps
+
+				req = requests.post(url+port+endPoint, data=GPSData, files=files, cookies=sessionCookie)
 				if req.status_code == 200:
-					print("Sent " + file)
-					lastSent = file
+					print("Sent " + fileToSend)
+					lastSent = fileToSend
 				else:
-					print("Failed to send "+file)
+					print("Failed to send " + fileToSend)
 					print("Server response: " + str(req.status_code))
 
 		time.sleep(1)
 
 
-def send_latest_image(url, port, sessionCookie, gps):
+def send_latest_image(url, port, sessionCookie, gps, GPSLock):
 	endPoint="/imageUploadSecure"
 	lastSent = ""
 
 	while True:
 		fileList = listdir("photos")
 		if fileList:
-			for file in fileList:
-				if file.endswith('~'):
+			for fileToSend in fileList:
+				if fileToSend.endswith('~'):
 					print("Tempt")
-					fileList.remove(file)
+					fileList.remove(fileToSend)
 
-			file = max(fileList)
+			fileToSend = max(fileList)
 
-			if file != lastSent:
-				files = {'image':open("photos/"+file)}
-				req = requests.post(url+port+endPoint, data=gps, files=files, cookies=sessionCookie)
+			if fileToSend != lastSent:
+				files = {'image':open("photos/" + fileToSend)}
+
+				with GPSLock:
+					GPSData = gps
+
+				req = requests.post(url+port+endPoint, data=GPSData, files=files, cookies=sessionCookie)
 				if req.status_code == 200:
-					print("Sent " + file)
-					lastSent = file
+					print("Sent " + fileToSend)
+					lastSent = fileToSend
 				else:
-					print("Failed to send " + file )
+					print("Failed to send " + fileToSend)
 					print("Server response: " + str(req.status_code))
 
 		time.sleep(1)

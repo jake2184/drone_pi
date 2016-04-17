@@ -3,21 +3,21 @@ import time
 import subprocess
 
 # Full list of Exposure and White Balance options
-#list_ex  = ['off','auto','night','nightpreview','backlight',
+# list_ex  = ['off','auto','night','nightpreview','backlight',
 #            'spotlight','sports','snow','beach','verylong',
 #            'fixedfps','antishake','fireworks']
-#list_awb = ['off','auto','sun','cloud','shade','tungsten',
+# list_awb = ['off','auto','sun','cloud','shade','tungsten',
 #            'fluorescent','incandescent','flash','horizon']
 
 # Refined list of Exposure and White Balance options. 50 photos.
-#list_ex  = ['off','auto','night','backlight','fireworks']
-#list_awb = ['off','auto','sun','cloud','shade','tungsten',
+# list_ex  = ['off','auto','night','backlight','fireworks']
+# list_awb = ['off','auto','sun','cloud','shade','tungsten',
 #            'fluorescent','incandescent','flash','horizon']
 
 
 def takePhotos(interval):
-    # Photo dimensions and rotation
-	photoWidth  = 640
+	# Photo dimensions and rotation
+	photoWidth = 640
 	photoHeight = 480
 
 	while True:
@@ -27,5 +27,5 @@ def takePhotos(interval):
 			' -w ' + str(photoWidth) + \
 			' -h ' + str(photoHeight)
 		pid = subprocess.call(cmd, shell=True)
-	print("Took image.")
-	time.sleep(interval)
+		print("Took image.")
+		time.sleep(interval)

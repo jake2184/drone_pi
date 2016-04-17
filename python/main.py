@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
+import Queue
 import threading
-from iot.client import iotClient
+from iot.client import runIot
 from audioCapture import record_to_file
 from fileSend import send_latest_image, send_latest_audio
 from imageCapture import takePhotos
+from mavConnection import mavLoop
+
 import time, sys
 import requests
 from requests.auth import HTTPBasicAuth
@@ -23,10 +26,6 @@ class Sensors:
 		self.temperature = 0.0
 		self.airPurity = 0
 		self.altitude = 0
-
-
-def runIot(gps, sensors, commandList):
-	client = iotClient("python/iot/config.conf", gps, sensors, commandList)
 
 
 def runAudioCapture():
@@ -61,14 +60,21 @@ if __name__ == '__main__':
 		'latitude' : 0.0
 	}
 	sensors = Sensors()
-	commandList = []
+	mavCommandList = Queue.Queue() # Thread Safe FIFO
+	piCommandList = Queue.Queue()
+
+	GPSLock = threading.Lock()
+	sensorLock = threading.Lock()
 
 	# Thread to regularly send/receive data
-	iotThread = threading.Thread(target=runIot, args=(gps, sensors, commandList))
+	iotThread = threading.Thread(target=runIot, args=(gps, GPSLock, sensors, sensorLock, mavCommandList, piCommandList))
 	iotThread.daemon = True
 	iotThread.start()
 
 	# Thread to communicate with drone
+	droneThread = threading.Thread(target=mavLoop, args=(gps, GPSLock, sensors, sensorLock, mavCommandList))
+	droneThread.daemon = True
+	# droneThread.start()
 
 	# Thread to capture photos
 	photoInterval = 1
@@ -82,12 +88,12 @@ if __name__ == '__main__':
 	audioThread.start()
 
 	# Thread to upload images
-	imageUploadThread = threading.Thread(target=send_latest_image, args=(url, port, sessionCookie, gps))
+	imageUploadThread = threading.Thread(target=send_latest_image, args=(url, port, sessionCookie, gps, GPSLock))
 	imageUploadThread.daemon = True
 	imageUploadThread.start()
 
 	# Thread to upload audio
-	audioUploadThread = threading.Thread(target=send_latest_audio, args=(url, port, sessionCookie, gps))
+	audioUploadThread = threading.Thread(target=send_latest_audio, args=(url, port, sessionCookie, gps, GPSLock))
 	audioUploadThread.daemon = True
 	audioUploadThread.start()
 
