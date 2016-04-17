@@ -1,0 +1,2 @@
+rm audio/*
+rm photos/*
