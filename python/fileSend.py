@@ -4,47 +4,51 @@ import requests
 from os import listdir
 import time
 
-def send_latest_audio(url, port, sessionCookie):
-    endPoint="/speechUploadSecure"
-    lastSent = ""
 
-    while True:
-        fileList = listdir("audio")
-        if fileList:
-            file = max(fileList)
+def send_latest_audio(url, port, sessionCookie, gps):
+	endPoint="/speechUploadSecure"
+	lastSent = ""
 
-            if file != lastSent:
-                files = {'audio':open("audio/"+file)}
-                req = requests.post(url+port+endPoint, files=files, cookies=sessionCookie)
-                if req.status_code == 200:
-                    print("Sent " + file)
-                    lastSent = file
-                else:
-                    print("Failed to send.")
+	while True:
+		fileList = listdir("audio")
+		if fileList:
+			file = max(fileList)
 
-        time.sleep(1)
+			if file != lastSent:
+				files = {'audio':open("audio/"+file)}
+				req = requests.post(url+port+endPoint, data=gps, files=files, cookies=sessionCookie)
+				if req.status_code == 200:
+					print("Sent " + file)
+					lastSent = file
+				else:
+					print("Failed to send "+file)
+					print("Server response: " + str(req.status_code))
 
-def send_latest_image(url, port, sessionCookie):
-    endPoint="/imageUploadSecure"
-    lastSent = ""
+		time.sleep(1)
 
-    while True:
-        fileList = listdir("photos")
-        if fileList:
-            for file in fileList:
-                if file.endswith('~'):
-                    print("Tempt")
-                    fileList.remove(file)
 
-            file = max(fileList)
+def send_latest_image(url, port, sessionCookie, gps):
+	endPoint="/imageUploadSecure"
+	lastSent = ""
 
-            if file != lastSent:
-                files = {'image':open("photos/"+file)}
-                req = requests.post(url+port+endPoint, files=files, cookies=sessionCookie)
-                if req.status_code == 200:
-                    print("Sent " + file)
-                    lastSent = file
-                else:
-                    print("Failed to send.")
+	while True:
+		fileList = listdir("photos")
+		if fileList:
+			for file in fileList:
+				if file.endswith('~'):
+					print("Tempt")
+					fileList.remove(file)
 
-        time.sleep(1)
+			file = max(fileList)
+
+			if file != lastSent:
+				files = {'image':open("photos/"+file)}
+				req = requests.post(url+port+endPoint, data=gps, files=files, cookies=sessionCookie)
+				if req.status_code == 200:
+					print("Sent " + file)
+					lastSent = file
+				else:
+					print("Failed to send " + file )
+					print("Server response: " + str(req.status_code))
+
+		time.sleep(1)

@@ -14,17 +14,18 @@ import subprocess
 #list_awb = ['off','auto','sun','cloud','shade','tungsten',
 #            'fluorescent','incandescent','flash','horizon']
 
-def takePhotos(interval):
-# Photo dimensions and rotation
-    photoWidth  = 640
-    photoHeight = 480
 
-    while True:
-        filename = "photos/" + str(int(time.time()*1000)) + ".jpg"
-        cmd = 'raspistill -o ' + filename + \
-            ' -t 1 ' + \
-            ' -w ' + str(photoWidth) + \
-            ' -h ' + str(photoHeight)
-        pid = subprocess.call(cmd, shell=True)
+def takePhotos(interval):
+    # Photo dimensions and rotation
+	photoWidth  = 640
+	photoHeight = 480
+
+	while True:
+		filename = "photos/" + str(int(time.time()*1000)) + ".jpg"
+		cmd = 'raspistill -o ' + filename + \
+			' -t 1 ' + \
+			' -w ' + str(photoWidth) + \
+			' -h ' + str(photoHeight)
+		pid = subprocess.call(cmd, shell=True)
 	print("Took image.")
-        time.sleep(interval)
+	time.sleep(interval)

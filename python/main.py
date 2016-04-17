@@ -9,29 +9,30 @@ import time, sys
 import requests
 from requests.auth import HTTPBasicAuth
 
+
 class GPS:
 
-    def __init__(self):
-        self.time = 0
-        self.latitude = 0.0
-        self.longitude = 0.0
+	def __init__(self):
+		self.time = 0
+		self.latitude = 0.0
+		self.longitude = 0.0
 
 
 class Sensors:
-    def __init__(self):
-        self.temperature = 0.0
-        self.airPurity = 0
-        self.altitude = 0
+	def __init__(self):
+		self.temperature = 0.0
+		self.airPurity = 0
+		self.altitude = 0
 
 
 def runIot(gps, sensors, commandList):
-    client = iotClient("python/iot/config.conf", gps, sensors, commandList)
+	client = iotClient("python/iot/config.conf", gps, sensors, commandList)
 
 
 def runAudioCapture():
-    while True:
-        record_to_file("audio")
-        print ("Made recording")
+	while True:
+		record_to_file("audio", "mp3")
+		print ("Made recording")
 
 
 # Thread to communicate with drone
@@ -44,7 +45,7 @@ if __name__ == '__main__':
 
 	# Check we can connect to Bluemix
 	try:
-		req = requests.get(url + port + "/login", timeout=2);
+		req = requests.get(url + port + "/login", timeout=2)
 	except requests.exceptions.RequestException:
 		print ("Cannot connect to " + url + port)
 		sys.exit(0)
@@ -53,10 +54,14 @@ if __name__ == '__main__':
 	req = requests.post(url + port + "/login", auth=HTTPBasicAuth('jake','pass'))
 	sessionCookie = req.cookies
 
-	gps = GPS()
+	#gps = GPS()
+	gps = {
+		'time' : 0,
+		'longitude' : 0.0,
+		'latitude' : 0.0
+	}
 	sensors = Sensors()
 	commandList = []
-
 
 	# Thread to regularly send/receive data
 	iotThread = threading.Thread(target=runIot, args=(gps, sensors, commandList))
@@ -77,15 +82,14 @@ if __name__ == '__main__':
 	audioThread.start()
 
 	# Thread to upload images
-	imageUploadThread = threading.Thread(target=send_latest_image, args=(url, port, sessionCookie))
+	imageUploadThread = threading.Thread(target=send_latest_image, args=(url, port, sessionCookie, gps))
 	imageUploadThread.daemon = True
 	imageUploadThread.start()
 
 	# Thread to upload audio
-	audioUploadThread = threading.Thread(target=send_latest_audio, args=(url, port, sessionCookie))
+	audioUploadThread = threading.Thread(target=send_latest_audio, args=(url, port, sessionCookie, gps))
 	audioUploadThread.daemon = True
 	audioUploadThread.start()
-
 
 	while True:
 		time.sleep(0.1)

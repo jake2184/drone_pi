@@ -5,6 +5,7 @@ import threading
 import json
 import time
 
+
 class iotClient:
 
 	def __init__(self, configFile, gps, sensors, commandList):
@@ -17,18 +18,16 @@ class iotClient:
 
 			while True:
 				print ("Sending sensors")
-				sensorReadings = { \
-				'time' : int(time.time() * 1000), \
-				'location' : [gps.latitude, gps.longitude], \
-				'temperature' : sensors.temperature, \
-				'airPurity' : sensors.airPurity, \
-				'altitude' : sensors.altitude
-
+				sensorReadings = {
+					'time' : int(time.time() * 1000),
+					'location' : [gps['latitude'], gps['longitude']],
+					'temperature' : sensors.temperature,
+					'airPurity' : sensors.airPurity,
+					'altitude' : sensors.altitude
 				}
 
 				self.client.publishEvent("sensors", "json", sensorReadings)
 				time.sleep(1)
-
 
 		except ibmiotf.ConnectionException as e:
 			print (e)
@@ -48,8 +47,6 @@ class iotClient:
 			elif dir == "STOP":
 				#Stop
 				pass
-
-
 		elif cmd.command == "else":
 			print (cmd.command)
 		else:
