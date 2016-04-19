@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 
-'''
-set stream rate on an APM
-'''
 
-import sys, struct, time, os
+import sys, struct, time, os, atexit
 
 from argparse import ArgumentParser
 parser = ArgumentParser(description=__doc__)
@@ -21,13 +18,29 @@ args = parser.parse_args()
 
 from pymavlink import mavutil
 
+
 def wait_heartbeat(m):
     '''wait for a heartbeat so we know the target system IDs'''
     print("Waiting for APM heartbeat")
     m.wait_heartbeat()
     print("Heartbeat from APM (system %u component %u)" % (m.target_system, m.target_system))
 
-def show_messages(m):
+
+def closeLink(master):
+    print("Ending")
+    master.close()
+
+def log(logfile, msg):
+    string = msg.name + " {"
+    for field in msg.ordered_fieldnames:
+        toAdd = field + ":" + str(getattr(msg, field)) + ", "
+        string = string + toAdd
+    string = string[:-2]
+    string = string + " }\n"
+    logfile.write(string)
+
+
+def show_messages(m, logfile):
     '''show incoming mavlink messages'''
     msg_count = 0
     while True:
@@ -41,30 +54,37 @@ def show_messages(m):
                 sys.stdout.flush()
         elif t == "HEARTBEAT":
             pass
+        elif t == "ATTITUDE":
+            pass
         else:
             msg_count = msg_count + 1
             sys.stdout.write(str(msg_count) + " ")
             print(msg)
+            log(logfile, msg)
+
 
 # create a mavlink serial instance
 master = mavutil.mavlink_connection(args.device, baud=args.baudrate)
 
+atexit.register(closeLink, master)
 # wait for the heartbeat msg to find the system ID
 wait_heartbeat(master)
 
 
-print("Sending all stream request for rate %u" % args.rate)
-for i in range(0, 3):
-    master.mav.request_data_stream_send(master.target_system, master.target_component,
-                                        #mavutil.mavlink.MAV_DATA_STREAM_ALL,
-                                        65,
-                                        args.rate, 1)
+# print("Sending all stream request for rate %u" % args.rate)
+# for i in range(0, 3):
+#     master.mav.request_data_stream_send(master.target_system, master.target_component,
+#                                         #mavutil.mavlink.MAV_DATA_STREAM_ALL,
+#                                         65,
+#                                         args.rate, 1)
+#
+# for i in range(0, 3):
+#     master.mav.request_data_stream_send(master.target_system, master.target_component,
+#                                         #mavutil.mavlink.MAV_DATA_STREAM_ALL,
+#                                         65,
+#                                         args.rate, 1)
 
-for i in range(0, 3):
-    master.mav.request_data_stream_send(master.target_system, master.target_component,
-                                        #mavutil.mavlink.MAV_DATA_STREAM_ALL,
-                                        65,
-                                        args.rate, 1)
+logfile = open("log.txt", 'w')
 
 if args.showmessages:
-    show_messages(master)
+    show_messages(master, logfile)
