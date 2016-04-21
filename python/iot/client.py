@@ -3,37 +3,28 @@
 import ibmiotf.device
 import threading
 import json
-import time
+import Queue
 
+import time
+class MavCommand:
+	def __init__(self, name, args):
+		self.name = name
+		self.args = args
+
+
+
+class Sensors:
+	def __init__(self):
+		self.temperature = 0.0
+		self.airPurity = 0
+		self.altitude = 0
 
 class iotClient:
 
-	# def __init__(self, configFile, gps, sensors, commandList):
-	# 	try:
-	# 		options = ibmiotf.device.ParseConfigFile(configFile)
-	# 		self.client = ibmiotf.device.Client(options)
-	# 		self.client.commandCallback = self.commandCallback
-	# 		self.client.connect()
-	# 		#self.startPings()
-    #
-	# 		while True:
-	# 			print ("Sending sensors")
-	# 			sensorReadings = {
-	# 				'time' : int(time.time() * 1000),
-	# 				'location' : [gps['latitude'], gps['longitude']],
-	# 				'temperature' : sensors.temperature,
-	# 				'airPurity' : sensors.airPurity,
-	# 				'altitude' : sensors.altitude
-	# 			}
-    #
-	# 			self.client.publishEvent("sensors", "json", sensorReadings)
-	# 			time.sleep(1)
-    #
-	# 	except ibmiotf.ConnectionException as e:
-	# 		print (e)
-
 	def __init__(self, configFile, mavCommandList, piCommandList):
 		try:
+			self.mavCommandList = mavCommandList
+			self.piCommandList = piCommandList
 			options = ibmiotf.device.ParseConfigFile(configFile)
 			self.client = ibmiotf.device.Client(options)
 			self.client.commandCallback = self.commandCallback
@@ -45,20 +36,11 @@ class iotClient:
 
 	def commandCallback(self, cmd):
 		print("Command: %s" % cmd.data)
-		type(cmd.data)
-		if cmd.command == "movement":
-			# Implement movement
-			dir = cmd.data['direction']
 
-			if dir == "UP":
-				# Move
-				# sendDroneCommand(pins?)
-				pass
-			elif dir == "STOP":
-				# Stop
-				pass
-		elif cmd.command == "else":
-			print (cmd.command)
+		if cmd.command == "piCommand":
+			self.piCommandList.put(cmd.data)
+		elif cmd.command == "mavCommand":
+			self.mavCommandList.put(MavCommand(cmd.data['name'], cmd.data['args']))
 		else:
 			print ("Unknown command: " % cmd.command)
 
@@ -90,10 +72,19 @@ def runIot(gps, GPSLock, sensors, sensorLock, mavCommandList, piCommandList):
 			GPSData = gps
 		with sensorLock:
 			sensorData = sensors
-		client.sendSensorReadings(GPSData, sensorData)
+		#client.sendSensorReadings(GPSData, sensorData)
 		time.sleep(1)
 
 
 if __name__ == '__main__':
-	iotClient("config.conf", None, None)
-	print ("Waiting..")
+	sensors = Sensors()
+	mavCommandList = Queue.Queue()  # Thread Safe FIFO
+	piCommandList = Queue.Queue()
+
+	GPSLock = threading.Lock()
+	sensorLock = threading.Lock()
+
+	gps = {}
+	gps['latitude'] = 0
+	gps['longitude'] = 0
+	runIot(gps, GPSLock, sensors, sensorLock, mavCommandList, piCommandList)
