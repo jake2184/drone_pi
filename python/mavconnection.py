@@ -6,12 +6,30 @@ import atexit
 import time
 import Queue, threading
 from pymavlink import mavutil
+from convert import convert
 
+# some base types from mavlink_types.h
+MAVLINK_TYPE_CHAR     = 0
+MAVLINK_TYPE_UINT8_T  = 1
+MAVLINK_TYPE_INT8_T   = 2
+MAVLINK_TYPE_UINT16_T = 3
+MAVLINK_TYPE_INT16_T  = 4
+MAVLINK_TYPE_UINT32_T = 5
+MAVLINK_TYPE_INT32_T  = 6
+MAVLINK_TYPE_UINT64_T = 7
+MAVLINK_TYPE_INT64_T  = 8
+MAVLINK_TYPE_FLOAT    = 9
+MAVLINK_TYPE_DOUBLE   = 10
 
 class MavCommand:
 	def __init__(self, name, args):
 		self.name = name
 		self.args = args
+
+class Parameter:
+	def __init__(self, value, type):
+		self.value = value
+		self.type = type
 
 
 class MavConnection:
@@ -21,146 +39,210 @@ class MavConnection:
 		self.master = mavutil.mavlink_connection(device, 57600, dialect="pixhawk")
 		self.ts = self.master.target_system
 		self.tc = self.master.target_component
+
 		print (self.ts)
 		print(self.tc)
 
+		self.savedParams = {}
+
 		atexit.register(self.closeLink)
 		self.logfile = open("log.txt", 'w')
-		self.paramfile = open("params.txt", 'w')
+		#self.paramfile = open("params.txt", 'w')
 		# wait for the heartbeat msg to find the system ID
 		self.wait_heartbeat()
 
 		self.commands = {
-			"logRequest" : self.master.mav.log_request_list_send,
+			"logRequest" : self.logReq,
 			"messageInterval" : self.master.mav.message_interval_send,
 			"sendCommand" : self.master.mav.command_int_send,
 			"dataStreamRequest" : self.master.mav.request_data_stream_send,
-			"getParam" : self.master.mav.param_request_read_send,
-			"paramListRequest" : self.master.mav.param_request_list_send
+			"paramListRequest" : self.master.mav.param_request_list_send,
+			"fetchAllParams" : self.master.param_fetch_all,
+			"saveParams" : self.saveParams,
+			"setParam" : self.sendParam,
+			"getParam" : self.master.param_fetch_one,
+			"setRC" : self.setRC,
+			"setPWM" : self.setPWM,
+			"setMisc" : self.setMisc,
+			"setBatt" : self.setBattery,
+			"setCBRK" : self.setCBRK,
+			"setServos" : self.setServos,
+			"arm" : self.master.arducopter_arm,
+			"disarm" : self.master.arducopter_disarm,
+			"reboot" : self.master.reboot_autopilot,
+			"setStab" : self.setStable,
+			"isArmed" : self.master.motors_armed,
+			"setRCChan" : self.setRCChan,
+			"getData" :self.getData,
+			"test" : self.test,
+			"getMode" : self.getMode
+
 		}
 
 	def wait_heartbeat(self):
 		print("Waiting for heartbeat")
 		self.master.wait_heartbeat()
+		print("Got Heartbeat")
 
 	def closeLink(self):
 		print("Ending")
 		self.master.close()
 
+	def logReq(self):
+		self.master.mav.log_request_list_send(self.ts,self.tc, 0, 0xffff)
+
 	def log(self, msg):
-		string = str(msg.id) + " " + msg.name + " {"
+		string = str(msg.id) + "\t" + msg.name + " {"
 		for field in msg.ordered_fieldnames:
 			toAdd = field + ":" + str(getattr(msg, field)) + ", "
 			string += toAdd
 		string = string[:-2]
 		string += " }\n"
 		self.logfile.write(string)
+		self.logfile.flush()
 
 	def paramLog(self, msg):
 		string = msg.param_id + "\t\t\t" + str(msg.param_value) + "\n"
 		self.paramfile.write(string)
 
 	def setRC(self):
-		self.master.param_set_send("RC_MAP_THROTTLE", float(3))
-		self.master.param_set_send("RC_MAP_PITCH", float(2))
-		self.master.param_set_send("RC_MAP_YAW", float(4))
-		self.master.param_set_send("RC_MAP_ROLL", float(1))
-		self.master.param_set_send("RC_MAP_MODE_SW", float(5))
-		self.master.param_set_send("RC_CHAN_CNT", float(5))
+		# self.master.param_set_send("RC_MAP_THROTTLE", 3, MAVLINK_TYPE_INT32_T)
+		# self.master.param_set_send("RC_MAP_PITCH", 2, MAVLINK_TYPE_INT32_T )
+		# self.master.param_set_send("RC_MAP_YAW", 4, MAVLINK_TYPE_INT32_T)
+		# self.master.param_set_send("RC_MAP_ROLL", 1, MAVLINK_TYPE_INT32_T)
+		# self.master.param_set_send("RC_MAP_MODE_SW", 5, MAVLINK_TYPE_INT32_T)
+		# self.master.param_set_send("RC_CHAN_CNT", 5, MAVLINK_TYPE_INT32_T)
+
+		self.master.param_set_send("RC_MAP_THROTTLE", convert(3), MAVLINK_TYPE_INT32_T)
+		self.master.param_set_send("RC_MAP_PITCH", convert(2), MAVLINK_TYPE_INT32_T)
+		self.master.param_set_send("RC_MAP_YAW", convert(4), MAVLINK_TYPE_INT32_T)
+		self.master.param_set_send("RC_MAP_ROLL", convert(1), MAVLINK_TYPE_INT32_T)
+		self.master.param_set_send("RC_MAP_MODE_SW", convert(5), MAVLINK_TYPE_INT32_T)
+		self.master.param_set_send("RC_CHAN_CNT", convert(5), MAVLINK_TYPE_INT32_T)
 
 	def setPWM(self):
-		self.master.param_set_send("PWM_MIN", float(1000))
-		self.master.param_set_send("PWM_MAX", float(2000))
-		self.master.param_set_send("PWM_AUX_MIN", float(1000))
-		self.master.param_set_send("PWM_AUX_MAX", float(2000))
-		self.master.param_set_send("PWM_DISARMED", float(1000))
-		self.master.param_set_send("PWM_AUX_DISARMED", float(1000))
+		self.sendParam("PWM_MIN", 1000, MAVLINK_TYPE_INT32_T)
+		self.sendParam("PWM_MAX", 2000, MAVLINK_TYPE_INT32_T)
+		self.sendParam("PWM_AUX_MIN", 1000, MAVLINK_TYPE_INT32_T)
+		self.sendParam("PWM_AUX_MAX", 2000, MAVLINK_TYPE_INT32_T)
+		self.sendParam("PWM_DISARMED", 1000, MAVLINK_TYPE_INT32_T)
+		self.sendParam("PWM_AUX_DISARMED", 1000, MAVLINK_TYPE_INT32_T)
+
+	def setBattery(self):
+		self.sendParam("BAT_N_CELLS", 3, MAVLINK_TYPE_INT32_T)
+
+	def setCBRK(self):
+		self.sendParam("CBRK_AIRSPD_CHK", 162128, MAVLINK_TYPE_INT32_T)
+		self.sendParam("CBRK_IO_SAFETY", 22027, MAVLINK_TYPE_INT32_T)
+		self.sendParam("CBRK_USB_CHK", 197848, MAVLINK_TYPE_INT32_T)
+		self.sendParam("CBRK_GPSFAIL", 240024, MAVLINK_TYPE_INT32_T)
+		self.sendParam("CBRK_FLIGHTTERM", 121212, MAVLINK_TYPE_INT32_T)
 
 	def setMisc(self):
-		self.master.param_set_send("MAV_TYPE", float(2))
-		self.master.param_set_send("CBRK_GPSFAIL", float(0))
-		self.master.param_set_send("COM_DL_LOSS_T", float(10))
-		self.master.param_set_send("COM_RC_IN_MODE", float(0))
-		self.master.param_set_send("BAT_N_CELLS", float(3))
-		self.master.param_set_send("COM_AUTOS_PAR", float(1))
-		self.master.param_set_send("CBRK_AIRSPD_CHK", 162128)
-		#self.master.param_set_send("CBRK_AIRSPD_CHK", float(2.27189717424e-40))
-		self.master.param_set_send("CBRK_IO_SAFETY", float(22027))
-		self.master.param_set_send("CBRK_USB_CHK", float(197848))
+		self.sendParam("MAV_TYPE", 2, MAVLINK_TYPE_INT32_T)
+		self.sendParam("COM_DL_LOSS_T", 10, MAVLINK_TYPE_INT32_T)
+		self.sendParam("COM_RC_LOSS_T", 20)
+		self.sendParam("COM_RC_IN_MODE", 0, MAVLINK_TYPE_INT32_T)
+		self.sendParam("COM_AUTOS_PAR", 1, MAVLINK_TYPE_INT32_T)
 
+	def setServos(self):
+		self.master.set_servo(1, 1500)
+		self.master.set_servo(2, 1500)
+		self.master.set_servo(3, 1500)
+		self.master.set_servo(4, 1500)
+
+	def setStable(self):
+		self.master.set_mode(0)
+
+	def test(self):
+		#self.master.mav.command_long_send(self.ts,self.tc, 178, 0, convert(1), convert(0xffffffff), convert(50), 0,0,0,0)
+		#self.master.set_mode_flag(16, True)
+		#self.master.set_mode_flag(128, True)
+		#self.master.set_mode_flag(64, True)
+		self.master.mav.command_long_send(self.ts, self.tc, 510, 0, convert(24), 0,0,0,0,0,0 )
+		self.master.mav.command_long_send(self.ts, self.tc, convert(510), 0, convert(24), 0, 0, 0, 0, 0, 0)
+		self.master.mav.command_long_send(self.ts, self.tc, 510, 0, 24, 0, 0, 0, 0, 0, 0)
+		self.master.mav.command_long_send(self.ts, self.tc, 510, 0, 24, 0, 0, 0, 0, 0, 0)
+		self.master.mav.command_int_send(self.ts, self.tc, 2, 510, 1, 0, convert(24), 0,0,0,0,0,0)
+		self.master.mav.command_int_send(self.ts, self.tc, 2, 510, 1, 0, 24, 0, 0, 0, 0, 0, 0)
+		self.master.set_mode_fbwa()
+
+	def getMode(self):
+		m = self.master.recv_match(type="HEARTBEAT", blocking=True)
+		number = "{0:b}".format(m.base_mode)
+		number = number.zfill(8)
+		print(number)
+
+	def setRCChan(self):
+		#self.sendParam("COM_RC_IN_MODE", 2, MAVLINK_TYPE_INT32_T)
+
+		self.master.mav.rc_channels_override_send(self.ts, self.tc, 1500,1500,1500,1500,1500,1500,1500,1500)
+		#self.master.mav.rc_channels_send(10000, 18, 1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,1500,80)
+		#self.master.mav.rc_channels_raw_send(10000, 0, 1500,1500,1500,1500,1500,1500,1500,1500,80)
+		#self.master.mav.rc_channels_raw_send(10000, 1, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 80)
+
+	def getData(self):
+		self.master.mav.command_long_send(self.ts,self.tc, 510, 0, 65,0,0,0,0,0,0)
+		self.master.mav.command_long_send(self.ts, self.tc, 510, 0, convert(65), 0, 0, 0, 0, 0, 0)
+		self.master.mav.command_long_send(self.ts, self.tc, 511 , 0, convert(34), convert(1000),0,0,0,0,0)
+		self.master.mav.command_long_send(self.ts, self.tc, 511, 0, convert(35), convert(1000), 0, 0, 0, 0, 0)
+		self.master.mav.command_long_send(self.ts, self.tc, 511, 0, convert(65), convert(1000), 0, 0, 0, 0,0)
+
+	def sendParam(self, name, value, type=MAVLINK_TYPE_FLOAT):
+
+		if type == MAVLINK_TYPE_INT32_T:
+			value = convert(value)
+
+		self.master.param_set_send(name, value, type)
 
 	def monitorMessages(self, gps, GPSLock, sensors, sensorLock, mavCommandList):
 		'''show incoming mavlink messages'''
-		msg_count = 0
 		msgTypes = []
-		gotParams=False
 		while True:
 			msg = self.master.recv_msg()#blocking=True)
 			if msg:
 				t = msg.get_type()
+				if t not in msgTypes:
+					# print(t)
+					msgTypes.append(t)
+
 				if t == "BAD_DATA":
 					if mavutil.all_printable(msg.data):
 						sys.stdout.write(msg.data)
 						sys.stdout.flush()
 				elif t == "HEARTBEAT":
-					pass
+					self.log(msg)
 				elif t == "ATTITUDE_TARGET":
 					pass
 				elif t == "ATTITUDE":
 					pass
-				else:
-
-					if t not in msgTypes:
-						print(t)
-						msgTypes.append(t)
-
+				elif t == "ALTITUDE":
+					pass
+				elif t == "LOCAL_POSITION_NED":
+					pass
+				elif t == "GPS_RAW_INT":
 					self.log(msg)
-					msg_count += 1
-					if msg_count == 20:
-						pass
-					if msg_count == 40:
-						pass
-						#self.setRC()
-						#self.setPWM()
-						#self.setMisc()
-					if msg_count == 60:
-						print("Request all params2")
-						self.logfile.flush()
-						self.master.param_fetch_all()
-
-					if gotParams:
-						print("Setting mode")
-						gotParams = False
-						#self.master.set_mode_manual()
-						self.master.arducopter_arm()
-
-					if t == "GPS_RAW_INT":
-						self.updateGPS(msg, gps, GPSLock)
-					#elif t == "VFR_HUD":
-					#	pass
-					#elif t == "HIGHRES_IMU":
-					#	pass
-					elif t == "PARAM_VALUE":
-						self.paramLog(msg)
-						if msg.param_index == msg.param_count - 1:
-							print("Got all parameters?")
-							gotParams = True
-							self.paramfile.flush()
-
-
+					self.updateGPS(msg, gps, GPSLock)
+				elif t == "VFR_HUD":
+					pass
+				elif t == "HIGHRES_IMU":
+					pass
+				elif t == "STATUSTEXT":
+					self.log(msg)
+					print(msg.text)
+				elif t == "PARAM_VALUE":
+					self.log(msg)
+					if t in self.savedParams:
+						self.savedParams[msg.param_id].value = msg.param_value
 					else:
-						#print(str(msg_count) + " " + msg.name )
-						pass
-						# if msg_count == 10:
-						# 	mavCommandList.put(MavCommand("logRequest", [self.ts, self.tc, 0x0, 0xffff]), block=True)
-						#
-						# if msg_count == 20:
-						# 	mavCommandList.put(MavCommand("dataStreamRequest",[self.ts,self.tc,0x1,0x1, 0x0]), block=True)
-						#
-						# if msg_count == 30:
-						# 	mavCommandList.put(MavCommand("dataStreamRequest", [self.ts, self.tc, 0x3, 0x1, 0x1]),
-						# 					   block=True)
+						self.savedParams[msg.param_id] = Parameter(msg.param_value, msg.param_type)
 
+					if msg.param_index == msg.param_count - 1:
+						print("Got all parameters?")
+
+				else:
+					self.log(msg)
+					pass
 
 			elif mavCommandList.qsize() > 0:
 				mavCommand = mavCommandList.get()
@@ -178,38 +260,25 @@ class MavConnection:
 		pass
 
 	def sendCommand(self, mavCommand):
-		print("Sending " + mavCommand.name)
+		print("Implementing " + mavCommand.name + " " + str(mavCommand.args))
 		try:
-			self.commands[mavCommand.name](*mavCommand.args)
-			time.sleep(1)
+			response = self.commands[mavCommand.name](*mavCommand.args)
+			if response is not None:
+				print(response)
+			time.sleep(0.5)
 		except KeyError as e:
-			print(e)
+			print("Couldn't find " + str(e))
+			pass
+		#except Exception as e:
+			#print e
+			#pass
 
-		#print("Sending req")
-		self.master.mav.log_request_list_send(self.ts, self.tc, 0, 65535)
-
-
-	def mavset(self, name, value, retries=3):
-		'''set a parameter on a mavlink connection'''
-		got_ack = False
-		while retries > 0 and not got_ack:
-			retries -= 1
-			self.master.mav.param_set_send(self.ts, self.tc, name.upper(), float(value), 1)
-			tstart = time.time()
-			while time.time() - tstart < 1:
-				ack = self.master.recv_match(type='PARAM_VALUE', blocking=False)
-				if ack == None:
-					time.sleep(0.1)
-					continue
-				if str(name).upper() == str(ack.param_id).upper():
-					got_ack = True
-					print("Got ack")
-					break
-		if not got_ack:
-			print("timeout setting %s to %f" % (name, float(value)))
-			return False
-		return True
-
+	def saveParams(self, fileName):
+		paramFile = open(fileName, 'w')
+		for param in sorted(self.savedParams):
+			string = param + "\t\t\t" + str(self.savedParams[param].value) + "\t\t\t" + str(self.savedParams[param].type) + "\n"
+			paramFile.write(string)
+		paramFile.close()
 
 def mavLoop(gps, GPSLock, sensors, sensorLock, mavCommandList):
 	mavlink = MavConnection()
@@ -217,13 +286,12 @@ def mavLoop(gps, GPSLock, sensors, sensorLock, mavCommandList):
 	mavlink.monitorMessages(gps, GPSLock, sensors, sensorLock, mavCommandList)
 
 
-
 class GPS:
-
 	def __init__(self):
 		self.time = 0
 		self.latitude = 0.0
 		self.longitude = 0.0
+
 
 class Sensors:
 	def __init__(self):
@@ -237,11 +305,28 @@ if __name__ == '__main__':
 	gpsLock = threading.Lock()
 	sensorLock = threading.Lock()
 	sensors = Sensors()
-	mavLoop(gps, gpsLock, sensors, sensorLock, q)
+
+	thread = threading.Thread(target=mavLoop, args=(gps, gpsLock, sensors, sensorLock, q))
+	thread.daemon = True
+	thread.start()
+
+	time.sleep(2)
+
+	while True:
+		command = raw_input("Command: ")
+		args = raw_input("Args: ")
+		args = args.split()
+
+		toGive = []
+		for arg in args:
+			try:
+				toGive.append(float(arg))
+			except ValueError as e:
+				toGive.append(arg)
 
 
-
-
+		print("\n")
+		q.put(MavCommand(command, toGive), block=True)
 
 
 
