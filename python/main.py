@@ -14,7 +14,6 @@ from requests.auth import HTTPBasicAuth
 
 
 class GPS:
-
 	def __init__(self):
 		self.time = 0
 		self.latitude = 0.0
@@ -67,9 +66,9 @@ if __name__ == '__main__':
 	sensorLock = threading.Lock()
 
 	# Thread to regularly send/receive data
-	iotThread = threading.Thread(target=runIot, args=(gps, GPSLock, sensors, sensorLock, mavCommandList, piCommandList))
-	iotThread.daemon = True
-	iotThread.start()
+	mqttThread = threading.Thread(target=runIot, args=(gps, GPSLock, sensors, sensorLock, mavCommandList, piCommandList))
+	mqttThread.daemon = True
+	mqttThread.start()
 
 	# Thread to communicate with drone
 	droneThread = threading.Thread(target=mavLoop, args=(gps, GPSLock, sensors, sensorLock, mavCommandList))
