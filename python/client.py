@@ -4,6 +4,7 @@ import ibmiotf.device
 import threading
 import json
 import Queue
+from main import GPS, Sensors
 
 import time
 class MavCommand:
@@ -12,14 +13,7 @@ class MavCommand:
 		self.args = args
 
 
-
-class Sensors:
-	def __init__(self):
-		self.temperature = 0.0
-		self.airPurity = 0
-		self.altitude = 0
-
-class iotClient:
+class mqttClient:
 
 	def __init__(self, configFile, mavCommandList, piCommandList):
 		try:
@@ -55,7 +49,7 @@ class iotClient:
 		print ("Sending sensors")
 		sensorReadings = {
 			'time': int(time.time() * 1000),
-			'location': [GPSData['latitude'], GPSData['longitude']],
+			'location': [GPSData.latitude, GPSData.longitude],
 			'temperature': sensorData.temperature,
 			'airPurity': sensorData.airPurity,
 			'altitude': sensorData.altitude
@@ -65,14 +59,14 @@ class iotClient:
 
 
 def runIot(gps, GPSLock, sensors, sensorLock, mavCommandList, piCommandList):
-	client = iotClient("python/iot/config.conf", mavCommandList, piCommandList)
+	client = mqttClient("python/iot/config.conf", mavCommandList, piCommandList)
 
 	while True:
 		with GPSLock:
 			GPSData = gps
 		with sensorLock:
 			sensorData = sensors
-		#client.sendSensorReadings(GPSData, sensorData)
+		client.sendSensorReadings(GPSData, sensorData)
 		time.sleep(1)
 
 
@@ -84,7 +78,5 @@ if __name__ == '__main__':
 	GPSLock = threading.Lock()
 	sensorLock = threading.Lock()
 
-	gps = {}
-	gps['latitude'] = 0
-	gps['longitude'] = 0
+	gps = GPS()
 	runIot(gps, GPSLock, sensors, sensorLock, mavCommandList, piCommandList)

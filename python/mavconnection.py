@@ -55,6 +55,7 @@ class MavConnection:
 			"logRequest" : self.logReq,
 			"messageInterval" : self.master.mav.message_interval_send,
 			"sendCommand" : self.master.mav.command_int_send,
+			"sendLongCommand" : self.master.mav.command_long_send,
 			"dataStreamRequest" : self.master.mav.request_data_stream_send,
 			"paramListRequest" : self.master.mav.param_request_list_send,
 			"fetchAllParams" : self.master.param_fetch_all,
@@ -76,7 +77,6 @@ class MavConnection:
 			"getData" :self.getData,
 			"test" : self.test,
 			"getMode" : self.getMode
-
 		}
 
 	def wait_heartbeat(self):

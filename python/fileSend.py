@@ -15,12 +15,12 @@ def send_latest_audio(url, port, sessionCookie, gps, GPSLock):
 			fileToSend = max(fileList)
 
 			if fileToSend != lastSent:
-				files = {'audio':open("audio/" + fileToSend, 'rb')}
+				files = {'audio' : open("audio/" + fileToSend, 'rb')}
 
 				with GPSLock:
 					GPSData = gps
 
-				req = requests.post(url+port+endPoint, data=GPSData, files=files, cookies=sessionCookie)
+				req = requests.post(url+port+endPoint, data=GPSData.__dict__, files=files, cookies=sessionCookie)
 				if req.status_code == 200:
 					print("Sent " + fileToSend)
 					lastSent = fileToSend
