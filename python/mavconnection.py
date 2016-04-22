@@ -196,26 +196,19 @@ class MavConnection:
 		self.master.mav.command_long_send(self.ts, self.tc, 511, 0, convert(65), convert(1000), 0, 0, 0, 0,0)
 
 	def sendParam(self, name, value, type=MAVLINK_TYPE_FLOAT):
-
+		print("Type: " + str(type))
 		if type == MAVLINK_TYPE_INT32_T:
+			print("Converting")
 			value = convert(value)
 
 		self.master.param_set_send(name, value, type)
 
-	def updateGPS(self, msg, gps):
+	def updateGPS(self, msg):
 		with self.GPSLock:
-			gps.time = int(time.time()*1000)
-			gps.latitude = msg.lat / 10000000.0
-			gps.longitude = msg.lon / 10000000.0
-
-	def updateBatteryReadings(self, msg):
-		with self.sensorLock:
-			if msg.get_type() == "SYS_STATUS":
-				self.status.battery_voltage = msg.voltage_battery
-			elif msg.get_type() == "BATTERY_STATUS":
-				self.status.battery_remaining = msg.battery_remaining
-			else:
-				print("Unknown battery message")
+			self.gps.time = int(time.time()*1000)
+			self.gps.latitude = float(msg.lat) / 10000000.0
+			self.gps.longitude = float(msg.lon) / 10000000.0
+			self.gps.altitude = float(msg.alt) / 1000.0
 
 	def updateSensors(self, msg):
 		with self.sensorLock:
@@ -223,12 +216,19 @@ class MavConnection:
 				self.sensors.heading = msg.heading
 
 	def updateStatus(self, msg):
-		t = msg.type
+		t = msg.get_type()
 		with self.statusLock:
 			if t == "HEARTBEAT":
 				self.status.mav_mode = msg.base_mode
 				self.status.mav_status = msg.system_status
-
+			elif t == "SYS_STATUS":
+				self.status.battery_voltage = msg.voltage_battery
+			elif t == "BATTERY_STATUS":
+				self.status.battery_remaining = msg.battery_remaining
+			elif t == "HOME_POSITION":
+				self.status.home_position = [msg.latitude/1000000.0, msg.longitude/10000000.0, msg.altitude/1000.0]
+			else:
+				print("Unknown status update type: " + t)
 
 	def sendCommand(self, mavCommand):
 		print("Implementing " + mavCommand.name + " " + str(mavCommand.args))
@@ -240,9 +240,9 @@ class MavConnection:
 		except KeyError as e:
 			print("Couldn't find " + str(e))
 			pass
-		#except Exception as e:
-			#print e
-			#pass
+		except Exception as e:
+			print e
+			pass
 
 	def saveParams(self, fileName):
 		paramFile = open(fileName, 'w')
@@ -270,34 +270,49 @@ class MavConnection:
 						sys.stdout.write(msg.data)
 						sys.stdout.flush()
 				elif t == "HEARTBEAT":
-					self.log(msg)
+					#self.log(msg)
 					self.updateStatus(msg)
 				elif t == "SYS_STATUS":
 					self.log(msg)
-					self.updateBatteryReadings(msg)
+					self.updateStatus(msg)
 				elif t == "BATTERY_STATUS":
-					self.log(msg)
-					self.updateBatteryReadings(msg)
+					#self.log(msg)
+					self.updateStatus(msg)
 				elif t == "ATTITUDE_TARGET":
-					self.log(msg)
+					# self.log(msg)
+					pass
 				elif t == "ATTITUDE": # roll/pitch/yaw
 					# self.log(msg)
 					pass
-				elif t == "ALTITUDE":
+				elif t == "HOME_POSITION":
+					self.updateStatus(msg)
 					self.log(msg)
+				elif t == "ALTITUDE":
+					#self.log(msg)
+					pass
 				elif t == "LOCAL_POSITION_NED":
 					self.log(msg)
 				elif t == "GPS_RAW_INT": # Should use not raw_int
+					pass
+					#self.log(msg)
+					#self.updateGPS(msg, gps)
+				elif t == "GLOBAL_POSITION_INT":
 					self.log(msg)
-					self.updateGPS(msg, gps)
+					self.updateGPS(msg)
 				elif t == "VFR_HUD":
-					self.log(msg)
+					#self.log(msg)
 					self.updateSensors(msg)
-				elif t == "HIGHRES_IMU":
-					self.log(msg)
 				elif t == "STATUSTEXT":
 					self.log(msg)
 					print(msg.text)
+				elif t == "EXTENDED_SYS_STATE":
+					pass
+				elif t == "HIGHRES_IMU":
+					pass
+				elif t == "LOCAL_POSITION_NED":
+					pass
+				elif t == "POSITION_TARGET_GLOBAL_INT":
+					pass
 				elif t == "PARAM_VALUE":
 					self.log(msg)
 					if t in self.savedParams:
@@ -332,8 +347,7 @@ class GPS:
 		self.time = 0
 		self.latitude = 0.0
 		self.longitude = 0.0
-
-
+		self.altitude = 0.0
 
 
 class Status:
@@ -343,7 +357,8 @@ class Status:
 		self.mav_status = 0
 		self.mav_mode = 0
 		self.mqtt_interval = 1000
-
+		self.mqtt_count = 0
+		self.home = [0.0, 0.0, 0]
 
 
 class Sensors:

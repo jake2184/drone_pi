@@ -3,6 +3,36 @@
 import Queue
 import sys
 import threading
+import time
+
+
+class GPS:
+	def __init__(self):
+		self.time = 0
+		self.latitude = 0.0
+		self.longitude = 0.0
+		self.altitude = 0.0
+
+
+class Status:
+	def __init__(self):
+		self.battery_voltage = 0.0
+		self.battery_remaining = 0
+		self.mav_status = 0
+		self.mav_mode = 0
+		self.mqtt_interval = 1000
+		self.mqtt_count = 0
+		self.home = [0.0, 0.0, 0]
+
+
+class Sensors:
+	def __init__(self):
+		self.temperature = 0.0
+		self.airPurity = 0
+		self.altitude = 0
+		self.heading = 0
+		self.altitude = 0
+
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -15,23 +45,8 @@ from mavconnection import mavLoop
 from sensorRead import sensorReadLoop
 from client import runIot
 
-class GPS:
-	def __init__(self):
-		self.time = 0
-		self.latitude = 0.0
-		self.longitude = 0.0
 
 
-class Sensors:
-	def __init__(self):
-		self.temperature = 0.0
-		self.airPurity = 0
-		self.altitude = 0
-
-
-class Status:
-	def __init__(self):
-		self.ding = 0
 
 
 class Settings:
@@ -70,12 +85,12 @@ if __name__ == '__main__':
 	# Thread to read Pi-attached sensors
 	sensorThread = threading.Thread(target=sensorReadLoop, args=(sensors, sensorLock))
 	sensorThread.daemon = True
-	sensorThread.start()
+	#sensorThread.start()
 
 	# Thread to communicate with drone
 	droneThread = threading.Thread(target=mavLoop, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList))
 	droneThread.daemon = True
-	# droneThread.start()
+	droneThread.start()
 
 	# Thread to capture photos
 	photoInterval = 1
@@ -86,7 +101,7 @@ if __name__ == '__main__':
 	# Thread to capture audio
 	audioThread = threading.Thread(target=runAudioCapture)
 	audioThread.daemon = True
-	audioThread.start()
+	#audioThread.start()
 
 	# Thread to upload images
 	imageUploadThread = threading.Thread(target=send_latest_image, args=(url, port, sessionCookie, gps, GPSLock))
@@ -104,7 +119,7 @@ if __name__ == '__main__':
 	mqttThread.start()
 
 
-	#while True:
-	#	time.sleep(0.1)
+	while True:
+		time.sleep(0.1)
 
 

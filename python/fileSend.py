@@ -3,6 +3,7 @@
 import requests
 from os import listdir
 import time
+from copy import copy
 
 
 def send_latest_audio(url, port, sessionCookie, gps, GPSLock):
@@ -18,7 +19,7 @@ def send_latest_audio(url, port, sessionCookie, gps, GPSLock):
 				files = {'audio' : open("audio/" + fileToSend, 'rb')}
 
 				with GPSLock:
-					GPSData = gps.copy()
+					GPSData = copy(gps)
 
 				req = requests.post(url+port+endPoint, data=GPSData.__dict__, files=files, cookies=sessionCookie)
 				if req.status_code == 200:
@@ -49,7 +50,7 @@ def send_latest_image(url, port, sessionCookie, gps, GPSLock):
 				files = {'image':open("photos/" + fileToSend, 'rb')}
 
 				with GPSLock:
-					GPSData = gps.copy()
+					GPSData = copy(gps)
 
 				req = requests.post(url+port+endPoint, data=GPSData, files=files, cookies=sessionCookie)
 				if req.status_code == 200:

@@ -5,6 +5,7 @@ import threading
 import json
 import Queue
 import time
+from copy import copy
 
 
 class MavCommand:
@@ -45,8 +46,8 @@ class mqttClient:
 		self.client.publishEvent("ping","json", pingMessage)
 		print ("Ping ")
 
-	def sendSensorReadings(self, GPSData, sensorData):
-		print ("Sending sensors")
+	def sendSensorReadings(self, GPSData, sensorData, status, statusLock):
+		# TODO add condition to set to none if time of reading is old
 		sensorReadings = {
 			'time': int(time.time() * 1000),
 			'location': [GPSData.latitude, GPSData.longitude],
@@ -57,16 +58,20 @@ class mqttClient:
 
 		self.client.publishEvent("sensors", "json", sensorReadings)
 
+		with statusLock:
+			status.mqtt_count += 1
+
 
 def runIot(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, piCommandList):
-	client = mqttClient("python/iot/config.conf", mavCommandList, piCommandList)
+	client = mqttClient("python/config.conf", mavCommandList, piCommandList)
 
 	while True:
 		with GPSLock:
-			GPSData = gps.copy()
+			GPSData = copy(gps)
 		with sensorLock:
-			sensorData = sensors.copy()
-		client.sendSensorReadings(GPSData, sensorData)
+			sensorData = copy(sensors)
+			#sensors.reset()
+		client.sendSensorReadings(GPSData, sensorData, status, statusLock)
 		time.sleep(status.mqtt_interval / 1000.0)
 
 
