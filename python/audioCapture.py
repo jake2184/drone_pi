@@ -148,6 +148,12 @@ def record_to_file(path, format):
 		wf.writeframes(data)
 		wf.close()
 
+
+def runAudioCapture():
+	while True:
+		record_to_file("audio", "mp3")
+		print ("Made recording")
+
 if __name__ == '__main__':
 	print("please speak a word into the microphone")
 	record_to_file('audio', "mp3")

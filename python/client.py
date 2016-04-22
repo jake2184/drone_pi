@@ -4,9 +4,9 @@ import ibmiotf.device
 import threading
 import json
 import Queue
-from main import GPS, Sensors
-
 import time
+
+
 class MavCommand:
 	def __init__(self, name, args):
 		self.name = name
@@ -58,17 +58,30 @@ class mqttClient:
 		self.client.publishEvent("sensors", "json", sensorReadings)
 
 
-def runIot(gps, GPSLock, sensors, sensorLock, mavCommandList, piCommandList):
+def runIot(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, piCommandList):
 	client = mqttClient("python/iot/config.conf", mavCommandList, piCommandList)
 
 	while True:
 		with GPSLock:
-			GPSData = gps
+			GPSData = gps.copy()
 		with sensorLock:
-			sensorData = sensors
+			sensorData = sensors.copy()
 		client.sendSensorReadings(GPSData, sensorData)
-		time.sleep(1)
+		time.sleep(status.mqtt_interval / 1000.0)
 
+
+class GPS:
+	def __init__(self):
+		self.time = 0
+		self.latitude = 0.0
+		self.longitude = 0.0
+
+
+class Sensors:
+	def __init__(self):
+		self.temperature = 0.0
+		self.airPurity = 0
+		self.altitude = 0
 
 if __name__ == '__main__':
 	sensors = Sensors()

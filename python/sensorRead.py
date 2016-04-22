@@ -46,6 +46,6 @@ def sensorReadLoop(sensors, sensorLock):
     while True:
         temp = read_temp(temp_device_file)
         with sensorLock:
-            sensors.temperature = temp
+            sensors.temperature = temp.copy()
         time.sleep(1)
 

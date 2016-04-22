@@ -8,6 +8,7 @@ import Queue, threading
 from pymavlink import mavutil
 from convert import convert
 
+
 # some base types from mavlink_types.h
 MAVLINK_TYPE_CHAR     = 0
 MAVLINK_TYPE_UINT8_T  = 1
@@ -42,6 +43,10 @@ class MavConnection:
 
 		print (self.ts)
 		print(self.tc)
+
+		self.GPSLock = None
+		self.sensorLock = None
+		self.statusLock = None
 
 		self.savedParams = {}
 
@@ -159,19 +164,21 @@ class MavConnection:
 		#self.master.set_mode_flag(16, True)
 		#self.master.set_mode_flag(128, True)
 		#self.master.set_mode_flag(64, True)
-		self.master.mav.command_long_send(self.ts, self.tc, 510, 0, convert(24), 0,0,0,0,0,0 )
-		self.master.mav.command_long_send(self.ts, self.tc, convert(510), 0, convert(24), 0, 0, 0, 0, 0, 0)
-		self.master.mav.command_long_send(self.ts, self.tc, 510, 0, 24, 0, 0, 0, 0, 0, 0)
-		self.master.mav.command_long_send(self.ts, self.tc, 510, 0, 24, 0, 0, 0, 0, 0, 0)
-		self.master.mav.command_int_send(self.ts, self.tc, 2, 510, 1, 0, convert(24), 0,0,0,0,0,0)
-		self.master.mav.command_int_send(self.ts, self.tc, 2, 510, 1, 0, 24, 0, 0, 0, 0, 0, 0)
+		# self.master.mav.command_long_send(self.ts, self.tc, 510, 0, convert(24), 0,0,0,0,0,0 )
+		# self.master.mav.command_long_send(self.ts, self.tc, convert(510), 0, convert(24), 0, 0, 0, 0, 0, 0)
+		# self.master.mav.command_long_send(self.ts, self.tc, 510, 0, 24, 0, 0, 0, 0, 0, 0)
+		# self.master.mav.command_long_send(self.ts, self.tc, 510, 0, 24, 0, 0, 0, 0, 0, 0)
+		# self.master.mav.command_int_send(self.ts, self.tc, 2, 510, 1, 0, convert(24), 0,0,0,0,0,0)
+		# self.master.mav.command_int_send(self.ts, self.tc, 2, 510, 1, 0, 24, 0, 0, 0, 0, 0, 0)
 		self.master.set_mode_fbwa()
 
+
 	def getMode(self):
-		m = self.master.recv_match(type="HEARTBEAT", blocking=True)
-		number = "{0:b}".format(m.base_mode)
+		msg = self.master.recv_match(type="HEARTBEAT", blocking=True)
+		number = "{0:b}".format(msg.base_mode)
 		number = number.zfill(8)
-		print(number)
+		print("Base_Mode: " + str(number))
+		print("System State: " + str(msg.system_status))
 
 	def setRCChan(self):
 		#self.sendParam("COM_RC_IN_MODE", 2, MAVLINK_TYPE_INT32_T)
@@ -195,7 +202,59 @@ class MavConnection:
 
 		self.master.param_set_send(name, value, type)
 
-	def monitorMessages(self, gps, GPSLock, sensors, sensorLock, mavCommandList):
+	def updateGPS(self, msg, gps):
+		with self.GPSLock:
+			gps.time = int(time.time()*1000)
+			gps.latitude = msg.lat / 10000000.0
+			gps.longitude = msg.lon / 10000000.0
+
+	def updateBatteryReadings(self, msg):
+		with self.sensorLock:
+			if msg.get_type() == "SYS_STATUS":
+				self.status.battery_voltage = msg.voltage_battery
+			elif msg.get_type() == "BATTERY_STATUS":
+				self.status.battery_remaining = msg.battery_remaining
+			else:
+				print("Unknown battery message")
+
+	def updateSensors(self, msg):
+		with self.sensorLock:
+			if msg.get_type() == "VFR_HUD":
+				self.sensors.heading = msg.heading
+
+	def updateStatus(self, msg):
+		t = msg.type
+		with self.statusLock:
+			if t == "HEARTBEAT":
+				self.status.mav_mode = msg.base_mode
+				self.status.mav_status = msg.system_status
+
+
+	def sendCommand(self, mavCommand):
+		print("Implementing " + mavCommand.name + " " + str(mavCommand.args))
+		try:
+			response = self.commands[mavCommand.name](*mavCommand.args)
+			if response is not None:
+				print(response)
+			time.sleep(0.5)
+		except KeyError as e:
+			print("Couldn't find " + str(e))
+			pass
+		#except Exception as e:
+			#print e
+			#pass
+
+	def saveParams(self, fileName):
+		paramFile = open(fileName, 'w')
+		for param in sorted(self.savedParams):
+			string = param + "\t\t\t" + str(self.savedParams[param].value) + "\t\t\t" + str(self.savedParams[param].type) + "\n"
+			paramFile.write(string)
+		paramFile.close()
+
+	def monitorMessages(self, gps, sensors, status, mavCommandList):
+		self.gps = gps
+		self.sensors = sensors
+		self.status = status
 		'''show incoming mavlink messages'''
 		msgTypes = []
 		while True:
@@ -212,21 +271,30 @@ class MavConnection:
 						sys.stdout.flush()
 				elif t == "HEARTBEAT":
 					self.log(msg)
+					self.updateStatus(msg)
+				elif t == "SYS_STATUS":
+					self.log(msg)
+					self.updateBatteryReadings(msg)
+				elif t == "BATTERY_STATUS":
+					self.log(msg)
+					self.updateBatteryReadings(msg)
 				elif t == "ATTITUDE_TARGET":
-					pass
-				elif t == "ATTITUDE":
+					self.log(msg)
+				elif t == "ATTITUDE": # roll/pitch/yaw
+					# self.log(msg)
 					pass
 				elif t == "ALTITUDE":
-					pass
-				elif t == "LOCAL_POSITION_NED":
-					pass
-				elif t == "GPS_RAW_INT":
 					self.log(msg)
-					self.updateGPS(msg, gps, GPSLock)
+				elif t == "LOCAL_POSITION_NED":
+					self.log(msg)
+				elif t == "GPS_RAW_INT": # Should use not raw_int
+					self.log(msg)
+					self.updateGPS(msg, gps)
 				elif t == "VFR_HUD":
-					pass
+					self.log(msg)
+					self.updateSensors(msg)
 				elif t == "HIGHRES_IMU":
-					pass
+					self.log(msg)
 				elif t == "STATUSTEXT":
 					self.log(msg)
 					print(msg.text)
@@ -250,40 +318,13 @@ class MavConnection:
 			else:
 				time.sleep(0.1)
 
-	def updateGPS(self, msg, gps, GPSLock):
-		with GPSLock:
-			gps.time = int(time.time()*1000)
-			gps.latitude = msg.lat
-			gps.longitude = msg.lon
 
-	def updateSensors(self, msg, sensors, sensorLock):
-		pass
-
-	def sendCommand(self, mavCommand):
-		print("Implementing " + mavCommand.name + " " + str(mavCommand.args))
-		try:
-			response = self.commands[mavCommand.name](*mavCommand.args)
-			if response is not None:
-				print(response)
-			time.sleep(0.5)
-		except KeyError as e:
-			print("Couldn't find " + str(e))
-			pass
-		#except Exception as e:
-			#print e
-			#pass
-
-	def saveParams(self, fileName):
-		paramFile = open(fileName, 'w')
-		for param in sorted(self.savedParams):
-			string = param + "\t\t\t" + str(self.savedParams[param].value) + "\t\t\t" + str(self.savedParams[param].type) + "\n"
-			paramFile.write(string)
-		paramFile.close()
-
-def mavLoop(gps, GPSLock, sensors, sensorLock, mavCommandList):
+def mavLoop(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList):
 	mavlink = MavConnection()
-
-	mavlink.monitorMessages(gps, GPSLock, sensors, sensorLock, mavCommandList)
+	mavlink.GPSLock = GPSLock
+	mavlink.sensorLock = sensorLock
+	mavlink.statusLock = statusLock
+	mavlink.monitorMessages(gps, sensors, status, mavCommandList)
 
 
 class GPS:
@@ -293,20 +334,37 @@ class GPS:
 		self.longitude = 0.0
 
 
+
+
+class Status:
+	def __init__(self):
+		self.battery_voltage = 0.0
+		self.battery_remaining = 0
+		self.mav_status = 0
+		self.mav_mode = 0
+		self.mqtt_interval = 1000
+
+
+
 class Sensors:
 	def __init__(self):
 		self.temperature = 0.0
 		self.airPurity = 0
 		self.altitude = 0
+		self.heading = 0
+		self.altitude = 0
+
 
 if __name__ == '__main__':
 	q = Queue.Queue()
 	gps = GPS()
 	gpsLock = threading.Lock()
 	sensorLock = threading.Lock()
+	statusLock = threading.Lock()
 	sensors = Sensors()
+	status = Status()
 
-	thread = threading.Thread(target=mavLoop, args=(gps, gpsLock, sensors, sensorLock, q))
+	thread = threading.Thread(target=mavLoop, args=(gps, gpsLock, sensors, sensorLock, status, statusLock, q))
 	thread.daemon = True
 	thread.start()
 

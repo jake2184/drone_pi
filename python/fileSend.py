@@ -18,7 +18,7 @@ def send_latest_audio(url, port, sessionCookie, gps, GPSLock):
 				files = {'audio' : open("audio/" + fileToSend, 'rb')}
 
 				with GPSLock:
-					GPSData = gps
+					GPSData = gps.copy()
 
 				req = requests.post(url+port+endPoint, data=GPSData.__dict__, files=files, cookies=sessionCookie)
 				if req.status_code == 200:
@@ -49,7 +49,7 @@ def send_latest_image(url, port, sessionCookie, gps, GPSLock):
 				files = {'image':open("photos/" + fileToSend, 'rb')}
 
 				with GPSLock:
-					GPSData = gps
+					GPSData = gps.copy()
 
 				req = requests.post(url+port+endPoint, data=GPSData, files=files, cookies=sessionCookie)
 				if req.status_code == 200:
