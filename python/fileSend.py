@@ -6,13 +6,17 @@ import time
 from copy import copy
 
 
-def send_latest_audio(url, port, sessionCookie, gps, GPSLock):
+def send_latest_audio(url, port, sessionCookie, gps, GPSLock, status, statusLock):
 	endPoint="/speechUploadSecure"
 	lastSent = ""
 
 	while True:
 		fileList = listdir("audio")
-		if fileList:
+
+		with statusLock:
+			sending = copy(status.uploadingAudio)
+
+		if fileList and sending:
 			fileToSend = max(fileList)
 
 			if fileToSend != lastSent:
@@ -32,13 +36,17 @@ def send_latest_audio(url, port, sessionCookie, gps, GPSLock):
 		time.sleep(1)
 
 
-def send_latest_image(url, port, sessionCookie, gps, GPSLock):
-	endPoint="/imageUploadSecure"
+def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock):
+	endPoint = "/imageUploadSecure"
 	lastSent = ""
 
 	while True:
 		fileList = listdir("photos")
-		if fileList:
+
+		with statusLock:
+			sending = copy(status.uploadingImages)
+
+		if fileList and sending:
 			for fileToSend in fileList:
 				if fileToSend.endswith('~'):
 					print("Tempt")

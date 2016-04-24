@@ -23,6 +23,9 @@ class Status:
 		self.mqtt_interval = 1000
 		self.mqtt_count = 0
 		self.home = [0.0, 0.0, 0]
+		self.uploadingImages = True
+		self.uploadingAudio = True
+		self.uploadingSensors = True
 
 
 class Sensors:
@@ -33,6 +36,10 @@ class Sensors:
 		self.heading = 0
 		self.altitude = 0
 
+class MavCommand:
+	def __init__(self, name, args):
+		self.name = name
+		self.args = args
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -41,18 +48,8 @@ from audioCapture import runAudioCapture
 from fileSend import send_latest_image, send_latest_audio
 from imageCapture import takePhotos
 from mavconnection import mavLoop
-#from client import runIot
 from sensorRead import sensorReadLoop
 from client import runIot
-
-
-
-
-
-class Settings:
-	def __init__(self):
-		self.set = 0
-
 
 
 if __name__ == '__main__':
@@ -104,12 +101,12 @@ if __name__ == '__main__':
 	#audioThread.start()
 
 	# Thread to upload images
-	imageUploadThread = threading.Thread(target=send_latest_image, args=(url, port, sessionCookie, gps, GPSLock))
+	imageUploadThread = threading.Thread(target=send_latest_image, args=(url, port, sessionCookie, gps, GPSLock, status, statusLock))
 	imageUploadThread.daemon = True
 	#imageUploadThread.start()
 
 	# Thread to upload audio
-	audioUploadThread = threading.Thread(target=send_latest_audio, args=(url, port, sessionCookie, gps, GPSLock))
+	audioUploadThread = threading.Thread(target=send_latest_audio, args=(url, port, sessionCookie, gps, GPSLock, status, statusLock))
 	audioUploadThread.daemon = True
 	audioUploadThread.start()
 
@@ -120,6 +117,25 @@ if __name__ == '__main__':
 
 
 	while True:
-		time.sleep(0.1)
+		if piCommandList.qsize() > 0:
+			command = piCommandList.get()
+
+			# TODO Args will be parsed as a float. If that fails, as a string
+			with statusLock:
+				if command.name == "setUploadImages":
+					status.uploadingImages = command.args[0]
+				elif command.name == "setUploadAudio":
+					status.uploadingAudio = command.args[0]
+				elif command.name == "setUploadSensors":
+					status.uploadingSensors = command.args[0]
+				elif command.name == "setUploadStream":
+					if(command.args[0] == "IMAGES"):
+						status.uploadingImages = command.args[1]
+					elif(command.args[0] == "AUDIO"):
+						status.uploadingAudio = command.args[1]
+					elif(command.args[0] == "SENSORS"):
+						status.uploadingSensors = command.args[1]
+
+		time.sleep(0.5)
 
 

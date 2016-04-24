@@ -6,12 +6,10 @@ import json
 import Queue
 import time
 from copy import copy
+from main import MavCommand, Status, Sensors, GPS
 
 
-class MavCommand:
-	def __init__(self, name, args):
-		self.name = name
-		self.args = args
+
 
 
 class mqttClient:
@@ -33,7 +31,7 @@ class mqttClient:
 		print("Command: %s" % cmd.data)
 
 		if cmd.command == "piCommand":
-			self.piCommandList.put(cmd.data)
+			self.piCommandList.put(MavCommand(cmd.data['name'], cmd.data['args']))
 		elif cmd.command == "mavCommand":
 			self.mavCommandList.put(MavCommand(cmd.data['name'], cmd.data['args']))
 		else:
@@ -71,30 +69,23 @@ def runIot(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList
 		with sensorLock:
 			sensorData = copy(sensors)
 			#sensors.reset()
-		client.sendSensorReadings(GPSData, sensorData, status, statusLock)
+		with statusLock:
+			sending = copy(status.uploadingSensors)
+		if sending:
+			client.sendSensorReadings(GPSData, sensorData, status, statusLock)
 		time.sleep(status.mqtt_interval / 1000.0)
 
 
-class GPS:
-	def __init__(self):
-		self.time = 0
-		self.latitude = 0.0
-		self.longitude = 0.0
-
-
-class Sensors:
-	def __init__(self):
-		self.temperature = 0.0
-		self.airPurity = 0
-		self.altitude = 0
 
 if __name__ == '__main__':
+	gps = GPS()
+	status = Status()
 	sensors = Sensors()
 	mavCommandList = Queue.Queue()  # Thread Safe FIFO
 	piCommandList = Queue.Queue()
 
 	GPSLock = threading.Lock()
 	sensorLock = threading.Lock()
+	statusLock = threading.Lock()
 
-	gps = GPS()
-	runIot(gps, GPSLock, sensors, sensorLock, mavCommandList, piCommandList)
+	runIot(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, piCommandList)

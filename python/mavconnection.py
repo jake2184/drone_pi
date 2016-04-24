@@ -7,7 +7,7 @@ import time
 import Queue, threading
 from pymavlink import mavutil
 from convert import convert
-
+from main import GPS, Sensors, Status
 
 # some base types from mavlink_types.h
 MAVLINK_TYPE_CHAR     = 0
@@ -340,34 +340,6 @@ def mavLoop(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandLis
 	mavlink.sensorLock = sensorLock
 	mavlink.statusLock = statusLock
 	mavlink.monitorMessages(gps, sensors, status, mavCommandList)
-
-
-class GPS:
-	def __init__(self):
-		self.time = 0
-		self.latitude = 0.0
-		self.longitude = 0.0
-		self.altitude = 0.0
-
-
-class Status:
-	def __init__(self):
-		self.battery_voltage = 0.0
-		self.battery_remaining = 0
-		self.mav_status = 0
-		self.mav_mode = 0
-		self.mqtt_interval = 1000
-		self.mqtt_count = 0
-		self.home = [0.0, 0.0, 0]
-
-
-class Sensors:
-	def __init__(self):
-		self.temperature = 0.0
-		self.airPurity = 0
-		self.altitude = 0
-		self.heading = 0
-		self.altitude = 0
 
 
 if __name__ == '__main__':
