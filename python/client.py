@@ -6,7 +6,7 @@ import json
 import Queue
 import time
 from copy import copy
-from main import MavCommand, Status, Sensors, GPS
+
 
 
 
@@ -76,7 +76,7 @@ def runIot(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList
 		time.sleep(status.mqtt_interval / 1000.0)
 
 
-
+from main import MavCommand, Status, Sensors, GPS
 if __name__ == '__main__':
 	gps = GPS()
 	status = Status()

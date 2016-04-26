@@ -2,7 +2,7 @@ import os
 import glob
 import time
 import subprocess
-
+import random
 # https://learn.adafruit.com/downloads/pdf/adafruits-raspberry-pi-lesson-11-ds18b20-temperature-sensing.pdf
 
 
@@ -46,6 +46,15 @@ def sensorReadLoop(sensors, sensorLock):
     while True:
         temp = read_temp(temp_device_file)
         with sensorLock:
-            sensors.temperature = temp.copy()
+            sensors.temperature = temp
         time.sleep(1)
 
+def dummySensorReadLoop(sensors, sensorLock):
+
+    while True:
+
+        with sensorLock:
+            sensors.temperature = 45 + (random.random() - 0.5) * 5
+            sensors.altitude = 100 + (random.random() - 0.5) * 10
+            sensors.airPurity = random.random()
+    time.sleep(1)

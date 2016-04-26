@@ -47,9 +47,9 @@ from requests.auth import HTTPBasicAuth
 from audioCapture import runAudioCapture
 from fileSend import send_latest_image, send_latest_audio
 from imageCapture import takePhotos
-from mavconnection import mavLoop
-from sensorRead import sensorReadLoop
+from sensorRead import sensorReadLoop, dummySensorReadLoop
 from client import runIot
+from mavconnection import mavLoop
 
 
 if __name__ == '__main__':
@@ -80,14 +80,14 @@ if __name__ == '__main__':
 
 
 	# Thread to read Pi-attached sensors
-	sensorThread = threading.Thread(target=sensorReadLoop, args=(sensors, sensorLock))
+	sensorThread = threading.Thread(target=dummySensorReadLoop, args=(sensors, sensorLock))
 	sensorThread.daemon = True
-	#sensorThread.start()
+	sensorThread.start()
 
 	# Thread to communicate with drone
 	droneThread = threading.Thread(target=mavLoop, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList))
 	droneThread.daemon = True
-	droneThread.start()
+	#droneThread.start()
 
 	# Thread to capture photos
 	photoInterval = 1
@@ -108,7 +108,7 @@ if __name__ == '__main__':
 	# Thread to upload audio
 	audioUploadThread = threading.Thread(target=send_latest_audio, args=(url, port, sessionCookie, gps, GPSLock, status, statusLock))
 	audioUploadThread.daemon = True
-	audioUploadThread.start()
+	#audioUploadThread.start()
 
 	# Thread to regularly send/receive data
 	mqttThread = threading.Thread(target=runIot, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, piCommandList))
