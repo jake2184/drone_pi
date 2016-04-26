@@ -3,7 +3,12 @@ import glob
 import time
 import subprocess
 import random
+import grovepi
 # https://learn.adafruit.com/downloads/pdf/adafruits-raspberry-pi-lesson-11-ds18b20-temperature-sensing.pdf
+
+# Port configuration
+air_sensor = 0
+grovepi.pinMode(air_sensor, "INPUT")
 
 
 def read_temp_raw(temp_device_file):
@@ -45,9 +50,13 @@ def sensorReadLoop(sensors, sensorLock):
     # Loop reading sensors
     while True:
         temp = read_temp(temp_device_file)
+        airPurity = grovepi.analogRead(air_sensor)
+
         with sensorLock:
             sensors.temperature = temp
+            sensors.airPurity = airPurity
         time.sleep(1)
+
 
 def dummySensorReadLoop(sensors, sensorLock):
 
@@ -56,5 +65,6 @@ def dummySensorReadLoop(sensors, sensorLock):
         with sensorLock:
             sensors.temperature = 45 + (random.random() - 0.5) * 5
             sensors.altitude = 100 + (random.random() - 0.5) * 10
-            sensors.airPurity = random.random()
-    time.sleep(1)
+            sensors.airPurity = 100 + random.random() * 500
+
+        time.sleep(1)
