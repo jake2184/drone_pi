@@ -6,9 +6,7 @@ import random
 import grovepi
 # https://learn.adafruit.com/downloads/pdf/adafruits-raspberry-pi-lesson-11-ds18b20-temperature-sensing.pdf
 
-# Port configuration
-air_sensor = 0
-grovepi.pinMode(air_sensor, "INPUT")
+
 
 
 def read_temp_raw(temp_device_file):
@@ -39,7 +37,9 @@ def read_temp_raw2(temp_device_file):
 
 
 def sensorReadLoop(sensors, sensorLock):
-
+    # Port configuration
+    air_sensor = 0
+    grovepi.pinMode(air_sensor, "INPUT")
     # Thermometer setup
     os.system('modprobe w1-gpio')
     os.system('modprobe w1-therm')
@@ -66,5 +66,6 @@ def dummySensorReadLoop(sensors, sensorLock):
             sensors.temperature = 45 + (random.random() - 0.5) * 5
             sensors.altitude = 100 + (random.random() - 0.5) * 10
             sensors.airPurity = 100 + random.random() * 500
+
 
         time.sleep(1)

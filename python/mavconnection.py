@@ -270,7 +270,7 @@ class MavConnection:
 						sys.stdout.write(msg.data)
 						sys.stdout.flush()
 				elif t == "HEARTBEAT":
-					#self.log(msg)
+					self.log(msg)
 					self.updateStatus(msg)
 				elif t == "SYS_STATUS":
 					self.log(msg)

@@ -20,7 +20,7 @@ class Status:
 		self.battery_remaining = 0
 		self.mav_status = 0
 		self.mav_mode = 0
-		self.mqtt_interval = 1000
+		self.mqtt_interval = 500
 		self.mqtt_count = 0
 		self.home = [0.0, 0.0, 0]
 		self.uploadingImages = True
@@ -47,7 +47,8 @@ from requests.auth import HTTPBasicAuth
 from audioCapture import runAudioCapture
 from fileSend import send_latest_image, send_latest_audio
 from imageCapture import takePhotos
-from sensorRead import sensorReadLoop, dummySensorReadLoop
+#from sensorRead import sensorReadLoop
+from sensorRead import dummySensorReadLoop
 from client import runIot
 from mavconnection import mavLoop
 
@@ -69,6 +70,8 @@ if __name__ == '__main__':
 	sessionCookie = req.cookies
 
 	gps = GPS()
+	gps.longitude = -0.18
+	gps.latitude = 51.5
 	sensors = Sensors()
 	status = Status()
 	mavCommandList = Queue.Queue() # Thread Safe FIFO
