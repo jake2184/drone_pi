@@ -6,6 +6,7 @@ from array import array
 from struct import pack
 import subprocess as sp
 
+import copy
 import pyaudio
 import wave
 import time
@@ -149,10 +150,16 @@ def record_to_file(path, format):
 		wf.close()
 
 
-def runAudioCapture():
+def runAudioCapture(status, statusLock):
 	while True:
-		record_to_file("audio", "mp3")
-		print ("Made recording")
+		with statusLock:
+			capturingAudio = copy(status.capturingAudio)
+
+		if capturingAudio:
+			record_to_file("audio", "mp3")
+			print ("Made recording")
+		else:
+			time.sleep(1)
 
 if __name__ == '__main__':
 	print("please speak a word into the microphone")

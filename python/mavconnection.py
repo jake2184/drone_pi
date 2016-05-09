@@ -63,6 +63,12 @@ class MavConnection:
 			"sendLongCommand" : self.master.mav.command_long_send,
 			"dataStreamRequest" : self.master.mav.request_data_stream_send,
 			"paramListRequest" : self.master.mav.param_request_list_send,
+			"getData" : self.master.mav.request_data_stream_send(self.ts, self.tc,
+                                                mavutil.mavlink.MAV_DATA_STREAM_ALL,
+                                                1, 1),
+			"getRC" : self.master.mav.request_data_stream_send(self.ts, self.tc,
+                                                mavutil.mavlink.MAV_DATA_STREAM_RC_CHANNELS,
+                                                1, 1),
 			"fetchAllParams" : self.master.param_fetch_all,
 			"saveParams" : self.saveParams,
 			"setParam" : self.sendParam,
@@ -81,7 +87,8 @@ class MavConnection:
 			"setRCChan" : self.setRCChan,
 			"getData" :self.getData,
 			"test" : self.test,
-			"getMode" : self.getMode
+			"getMode" : self.getMode,
+			#"raiseAltitude" : self.something
 		}
 
 	def wait_heartbeat(self):
@@ -276,7 +283,7 @@ class MavConnection:
 					self.log(msg)
 					self.updateStatus(msg)
 				elif t == "BATTERY_STATUS":
-					#self.log(msg)
+					self.log(msg)
 					self.updateStatus(msg)
 				elif t == "ATTITUDE_TARGET":
 					# self.log(msg)
@@ -286,18 +293,19 @@ class MavConnection:
 					pass
 				elif t == "HOME_POSITION":
 					self.updateStatus(msg)
-					self.log(msg)
+					#self.log(msg)
 				elif t == "ALTITUDE":
 					#self.log(msg)
 					pass
 				elif t == "LOCAL_POSITION_NED":
-					self.log(msg)
+					#self.log(msg)
+					pass
 				elif t == "GPS_RAW_INT": # Should use not raw_int
 					pass
 					#self.log(msg)
 					#self.updateGPS(msg, gps)
 				elif t == "GLOBAL_POSITION_INT":
-					self.log(msg)
+					#self.log(msg)
 					self.updateGPS(msg)
 				elif t == "VFR_HUD":
 					#self.log(msg)
@@ -311,7 +319,8 @@ class MavConnection:
 					pass
 				elif t == "LOCAL_POSITION_NED":
 					pass
-				elif t == "POSITION_TARGET_GLOBAL_INT":
+				elif t == "POSITION_TARGET_GLOBAL_INT" or t == "TERRAIN_REPORT" or t=="POWER_STATUS" or t=="RAW_IMU" or t=="SYSTEM_TIME" \
+					or t=="MISSION_CURRENT" or t=="SCALED_IMU2" or t=="SCALED_PRESSURE" :
 					pass
 				elif t == "PARAM_VALUE":
 					self.log(msg)

@@ -68,7 +68,7 @@ def runIot(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList
 			GPSData = copy(gps)
 		with sensorLock:
 			sensorData = copy(sensors)
-			#sensors.reset()
+			sensors.reset()
 		with statusLock:
 			sending = copy(status.uploadingSensors)
 		if sending:

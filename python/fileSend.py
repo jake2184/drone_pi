@@ -7,7 +7,7 @@ from copy import copy
 
 
 def send_latest_audio(url, port, sessionCookie, gps, GPSLock, status, statusLock):
-	endPoint="/speechUploadSecure"
+	endPoint="/api/audio"
 	lastSent = ""
 
 	while True:
@@ -37,7 +37,7 @@ def send_latest_audio(url, port, sessionCookie, gps, GPSLock, status, statusLock
 
 
 def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock):
-	endPoint = "/imageUploadSecure"
+	endPoint = "/api/images"
 	lastSent = ""
 
 	while True:
@@ -49,7 +49,6 @@ def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock
 		if fileList and sending:
 			for fileToSend in fileList:
 				if fileToSend.endswith('~'):
-					print("Tempt")
 					fileList.remove(fileToSend)
 
 			fileToSend = max(fileList)
@@ -60,7 +59,7 @@ def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock
 				with GPSLock:
 					GPSData = copy(gps)
 
-				req = requests.post(url+port+endPoint, data=GPSData, files=files, cookies=sessionCookie)
+				req = requests.post(url+port+endPoint, data=GPSData.__dict__, files=files, cookies=sessionCookie)
 				if req.status_code == 200:
 					print("Sent " + fileToSend)
 					lastSent = fileToSend
@@ -68,4 +67,35 @@ def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock
 					print("Failed to send " + fileToSend)
 					print("Server response: " + str(req.status_code))
 
+		time.sleep(1)
+
+
+def send_test_images(url, port, sessionCookie, gps, GPSLock, status, statusLock):
+	endPoint = "/api/images/"
+	lastSent = ""
+
+	fileList = listdir("test/fire")
+
+	with statusLock:
+		sending = copy(status.uploadingImages)
+
+	for i in range(1, len(fileList)):
+		if sending:
+			fileToSend = min(fileList)
+
+			if fileToSend != lastSent:
+				files = {'image':open("test/fire/" + fileToSend, 'rb')}
+
+				with GPSLock:
+					GPSData = copy(gps)
+
+				GPSData.time = fileToSend[:-4]
+				req = requests.post(url + port + endPoint + fileToSend[:-4], data=GPSData.__dict__, files=files, cookies=sessionCookie)
+				if req.status_code == 200:
+					print("Sent " + fileToSend)
+					lastSent = fileToSend
+					fileList.remove(fileToSend)
+				else:
+					print("Failed to send " + fileToSend)
+					print("Server response: " + str(req.status_code))
 		time.sleep(1)

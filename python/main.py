@@ -20,21 +20,32 @@ class Status:
 		self.battery_remaining = 0
 		self.mav_status = 0
 		self.mav_mode = 0
-		self.mqtt_interval = 500
+		self.mqtt_interval = 2000
 		self.mqtt_count = 0
 		self.home = [0.0, 0.0, 0]
 		self.uploadingImages = True
 		self.uploadingAudio = True
 		self.uploadingSensors = True
+		self.capturingAudio = False
+		self.capturingImages = True
+		self.photoInterval = 1000
 
 
 class Sensors:
 	def __init__(self):
-		self.temperature = 0.0
-		self.airPurity = 0
-		self.altitude = 0
-		self.heading = 0
-		self.altitude = 0
+		self.reset()
+		# self.temperature = 0.0
+		# self.airPurity = 0
+		# self.altitude = 0
+		# self.heading = 0
+		# self.altitude = 0
+	def reset(self):
+		self.temperature = None
+		self.airPurity = None
+		self.altitude = None
+		self.heading = None
+		self.altitude = None
+
 
 class MavCommand:
 	def __init__(self, name, args):
@@ -51,11 +62,12 @@ from imageCapture import takePhotos
 from sensorRead import dummySensorReadLoop
 from client import runIot
 from mavconnection import mavLoop
+from fileSend import send_test_images
 
 
 if __name__ == '__main__':
 
-	url = "http://192.168.1.76"
+	url = "http://192.168.1.77"
 	port = ":8080"
 
 	# Check we can connect to Bluemix
@@ -93,20 +105,19 @@ if __name__ == '__main__':
 	#droneThread.start()
 
 	# Thread to capture photos
-	photoInterval = 1
-	imageThread = threading.Thread(target=takePhotos, args=(photoInterval,))
+	imageThread = threading.Thread(target=takePhotos, args=(status, statusLock))
 	imageThread.daemon = True
 	#imageThread.start()
 
 	# Thread to capture audio
-	audioThread = threading.Thread(target=runAudioCapture)
+	audioThread = threading.Thread(target=runAudioCapture, args=(status, statusLock))
 	audioThread.daemon = True
 	#audioThread.start()
 
 	# Thread to upload images
-	imageUploadThread = threading.Thread(target=send_latest_image, args=(url, port, sessionCookie, gps, GPSLock, status, statusLock))
+	imageUploadThread = threading.Thread(target=send_test_images, args=(url, port, sessionCookie, gps, GPSLock, status, statusLock))
 	imageUploadThread.daemon = True
-	#imageUploadThread.start()
+	imageUploadThread.start()
 
 	# Thread to upload audio
 	audioUploadThread = threading.Thread(target=send_latest_audio, args=(url, port, sessionCookie, gps, GPSLock, status, statusLock))
@@ -138,7 +149,13 @@ if __name__ == '__main__':
 						status.uploadingAudio = command.args[1]
 					elif(command.args[0] == "SENSORS"):
 						status.uploadingSensors = command.args[1]
-
+				elif command.name == "captureAudio":
+					status.capturingAudio = command.args[0]
+				elif command.name == "captureImages":
+					status.capturingImages = command.args[0]
+				elif command.name == "photoInterval":
+					status.photoInterval = command.args[0]
+				# Could change some of the above to work on status.__dict__
 		time.sleep(0.5)
 
 

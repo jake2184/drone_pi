@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import time
 import subprocess
+import copy
 
 # Full list of Exposure and White Balance options
 # list_ex  = ['off','auto','night','nightpreview','backlight',
@@ -15,17 +16,22 @@ import subprocess
 #            'fluorescent','incandescent','flash','horizon']
 
 
-def takePhotos(interval):
+def takePhotos(status, statusLock):
 	# Photo dimensions and rotation
 	photoWidth = 640
 	photoHeight = 480
 
 	while True:
-		filename = "photos/" + str(int(time.time()*1000)) + ".jpg"
-		cmd = 'raspistill -o ' + filename + \
-			' -t 1 ' + \
-			' -w ' + str(photoWidth) + \
-			' -h ' + str(photoHeight)
-		pid = subprocess.call(cmd, shell=True)
-		print("Took image.")
-		time.sleep(interval)
+		with statusLock:
+			capturingImages = copy(status.capturingImages)
+			interval = copy(status.interval)
+
+		if capturingImages:
+			filename = "photos/" + str(int(time.time()*1000)) + ".jpg"
+			cmd = 'raspistill -o ' + filename + \
+				' -t 1 ' + \
+				' -w ' + str(photoWidth) + \
+				' -h ' + str(photoHeight)
+			pid = subprocess.call(cmd, shell=True)
+			print("Took image.")
+		time.sleep(interval / 1000)
