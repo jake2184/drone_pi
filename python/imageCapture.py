@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import time
 import subprocess
-import copy
+from copy import copy
 
 # Full list of Exposure and White Balance options
 # list_ex  = ['off','auto','night','nightpreview','backlight',

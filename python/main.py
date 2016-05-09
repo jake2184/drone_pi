@@ -20,7 +20,7 @@ class Status:
 		self.battery_remaining = 0
 		self.mav_status = 0
 		self.mav_mode = 0
-		self.mqtt_interval = 2000
+		self.mqttInterval = 2000
 		self.mqtt_count = 0
 		self.home = [0.0, 0.0, 0]
 		self.uploadingImages = True
@@ -29,6 +29,7 @@ class Status:
 		self.capturingAudio = False
 		self.capturingImages = True
 		self.photoInterval = 1000
+		self.streamingAudio = True #TODO change
 
 
 class Sensors:
@@ -39,6 +40,7 @@ class Sensors:
 		# self.altitude = 0
 		# self.heading = 0
 		# self.altitude = 0
+
 	def reset(self):
 		self.temperature = None
 		self.airPurity = None
@@ -55,7 +57,7 @@ class MavCommand:
 import requests
 from requests.auth import HTTPBasicAuth
 
-from audioCapture import runAudioCapture
+from audioCapture import runAudioCapture, streamAudio
 from fileSend import send_latest_image, send_latest_audio
 from imageCapture import takePhotos
 #from sensorRead import sensorReadLoop
@@ -129,6 +131,9 @@ if __name__ == '__main__':
 	mqttThread.daemon = True
 	mqttThread.start()
 
+	streamingThread = threading.Thread(target=streamAudio, args=(status, statusLock))
+	streamingThread.daemon = True
+	streamingThread.start()
 
 	while True:
 		if piCommandList.qsize() > 0:
@@ -143,11 +148,11 @@ if __name__ == '__main__':
 				elif command.name == "setUploadSensors":
 					status.uploadingSensors = command.args[0]
 				elif command.name == "setUploadStream":
-					if(command.args[0] == "IMAGES"):
+					if command.args[0] == "IMAGES":
 						status.uploadingImages = command.args[1]
-					elif(command.args[0] == "AUDIO"):
+					elif command.args[0] == "AUDIO":
 						status.uploadingAudio = command.args[1]
-					elif(command.args[0] == "SENSORS"):
+					elif command.args[0] == "SENSORS":
 						status.uploadingSensors = command.args[1]
 				elif command.name == "captureAudio":
 					status.capturingAudio = command.args[0]
@@ -155,6 +160,12 @@ if __name__ == '__main__':
 					status.capturingImages = command.args[0]
 				elif command.name == "photoInterval":
 					status.photoInterval = command.args[0]
+				elif command.name == "mqttInterval":
+					status.mqttInterval = command.args[0]
+				elif command.name == "enableAudioStream":
+					status.capturingAudio = False
+					status.streamingAudio = True
+
 				# Could change some of the above to work on status.__dict__
 		time.sleep(0.5)
 

@@ -3,14 +3,16 @@
 
 from sys import byteorder
 from array import array
-from struct import pack
+from struct import pack, unpack
 import subprocess as sp
 
-import copy
+from copy import copy
 import pyaudio
 import wave
 import time
 
+from main import Status
+from websocket import create_connection
 
 THRESHOLD = 500
 #CHUNK_SIZE = 1024
@@ -150,6 +152,49 @@ def record_to_file(path, format):
 		wf.close()
 
 
+def listen():
+	wf = wave.open("dump.wav", 'wb')
+	wf.setnchannels(1)
+	sample_width = pyaudio.PyAudio().get_sample_size(FORMAT)
+	wf.setsampwidth(sample_width)
+	wf.setframerate(RATE)
+	ws2 = create_connection("ws://localhost:8080/listen")
+	while True:
+		result = ws2.recv()
+		unpacked = unpack('<' + ('h' * (len(result) / 2)), result)
+		data = pack('<' + ('h' * (len(unpacked))), *unpacked)
+		wf.writeframes(data)
+
+
+def stream_audio():
+
+	p = pyaudio.PyAudio()
+	stream = p.open(format=FORMAT, channels=1, rate=RATE,
+					input=True, output=True,
+					frames_per_buffer=CHUNK_SIZE)
+
+
+	listenerThread = threading.Thread(target=listen)
+	listenerThread.daemon = True
+	listenerThread.start()
+
+	ws = create_connection("ws://localhost:8080/audio")
+	result = ws.recv()
+	print "Received '%s'" % result
+
+	while 1:
+		# little endian, signed short
+		snd_data = array('h', stream.read(CHUNK_SIZE))
+		if byteorder == 'big':
+			snd_data.byteswap()
+
+		byte_data = pack('<' + ('h' * len(snd_data)), *snd_data)
+
+		ws.send_binary(byte_data)
+
+	ws.close()
+
+
 def runAudioCapture(status, statusLock):
 	while True:
 		with statusLock:
@@ -161,7 +206,26 @@ def runAudioCapture(status, statusLock):
 		else:
 			time.sleep(1)
 
+
+def streamAudio(status, statusLock):
+	with statusLock:
+		streamingAudio = copy(status.streamingAudio)
+
+	if streamingAudio:
+		print ("Streaming..")
+		stream_audio()
+	else:
+		print("Not streaming.")
+
+
 if __name__ == '__main__':
-	print("please speak a word into the microphone")
-	record_to_file('audio', "mp3")
-	print("done - result written to demo.wav")
+	#print("please speak a word into the microphone")
+	#record_to_file('audio', "mp3")
+	#print("done - result written to demo.wav")
+
+
+	import threading
+	statusLock = threading.Lock()
+	status = Status()
+	status.capturingAudio = True
+	streamAudio(status, statusLock)
