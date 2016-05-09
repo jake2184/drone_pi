@@ -131,7 +131,7 @@ if __name__ == '__main__':
 	mqttThread.daemon = True
 	mqttThread.start()
 
-	streamingThread = threading.Thread(target=streamAudio, args=(status, statusLock))
+	streamingThread = threading.Thread(target=streamAudio, args=(status, statusLock, sessionCookie))
 	streamingThread.daemon = True
 	streamingThread.start()
 

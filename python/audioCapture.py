@@ -152,33 +152,43 @@ def record_to_file(path, format):
 		wf.close()
 
 
-def listen():
+def listen(sessionCookie):
 	wf = wave.open("dump.wav", 'wb')
 	wf.setnchannels(1)
 	sample_width = pyaudio.PyAudio().get_sample_size(FORMAT)
 	wf.setsampwidth(sample_width)
 	wf.setframerate(RATE)
-	ws2 = create_connection("ws://localhost:8080/listen")
-	while True:
-		result = ws2.recv()
-		unpacked = unpack('<' + ('h' * (len(result) / 2)), result)
-		data = pack('<' + ('h' * (len(unpacked))), *unpacked)
-		wf.writeframes(data)
+	ws2 = create_connection("ws://localhost:8080/api/audio/stream/listen", cookie="session="+sessionCookie)
+
+	result = ws2.recv()
+	print (result)
+
+	if ws2.connected:
+		while True:
+			print("Waiting for data")
+			result = ws2.recv()
+			unpacked = unpack('<' + ('h' * (len(result) / 2)), result)
+			data = pack('<' + ('h' * (len(unpacked))), *unpacked)
+			wf.writeframes(data)
+	else:
+		print("Not connected")
 
 
-def stream_audio():
+def stream_audio(sessionCookie):
+
+	sessionCookie = requests.utils.dict_from_cookiejar(sessionCookie)['session']
+
 
 	p = pyaudio.PyAudio()
 	stream = p.open(format=FORMAT, channels=1, rate=RATE,
 					input=True, output=True,
 					frames_per_buffer=CHUNK_SIZE)
 
-
-	listenerThread = threading.Thread(target=listen)
+	listenerThread = threading.Thread(target=listen, args=(sessionCookie,))
 	listenerThread.daemon = True
 	listenerThread.start()
 
-	ws = create_connection("ws://localhost:8080/audio")
+	ws = create_connection("ws://localhost:8080/api/audio/stream/upload", cookie="session="+sessionCookie)
 	result = ws.recv()
 	print "Received '%s'" % result
 
@@ -207,13 +217,13 @@ def runAudioCapture(status, statusLock):
 			time.sleep(1)
 
 
-def streamAudio(status, statusLock):
+def streamAudio(status, statusLock, sessionCookie):
 	with statusLock:
 		streamingAudio = copy(status.streamingAudio)
 
 	if streamingAudio:
 		print ("Streaming..")
-		stream_audio()
+		stream_audio(sessionCookie)
 	else:
 		print("Not streaming.")
 
@@ -222,10 +232,21 @@ if __name__ == '__main__':
 	#print("please speak a word into the microphone")
 	#record_to_file('audio', "mp3")
 	#print("done - result written to demo.wav")
+	import requests, sys
+	from requests.auth import HTTPBasicAuth
+	url = "http://localhost"
+	port = ":8080"
+	try:
+		req = requests.get(url + port + "/login", timeout=2)
+	except requests.exceptions.RequestException:
+		print ("Cannot connect to " + url + port)
+		sys.exit(0)
 
-
+	# Try logging in
+	req = requests.post(url + port + "/login", auth=HTTPBasicAuth('jake', 'pass'))
+	sessionCookie = req.cookies
 	import threading
 	statusLock = threading.Lock()
 	status = Status()
 	status.capturingAudio = True
-	streamAudio(status, statusLock)
+	streamAudio(status, statusLock, sessionCookie)
