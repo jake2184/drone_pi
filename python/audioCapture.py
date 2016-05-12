@@ -158,10 +158,7 @@ def listen(sessionCookie):
 	sample_width = pyaudio.PyAudio().get_sample_size(FORMAT)
 	wf.setsampwidth(sample_width)
 	wf.setframerate(RATE)
-	ws2 = create_connection("ws://localhost:8080/api/audio/stream/listen", cookie="session="+sessionCookie)
-
-	result = ws2.recv()
-	print (result)
+	ws2 = create_connection("ws://localhost:8080/api/pixhack/audio/stream/listen", cookie="session="+sessionCookie)
 
 	if ws2.connected:
 		while True:
@@ -172,37 +169,6 @@ def listen(sessionCookie):
 			wf.writeframes(data)
 	else:
 		print("Not connected")
-
-
-def stream_audio(sessionCookie):
-
-	sessionCookie = requests.utils.dict_from_cookiejar(sessionCookie)['session']
-
-
-	p = pyaudio.PyAudio()
-	stream = p.open(format=FORMAT, channels=1, rate=RATE,
-					input=True, output=True,
-					frames_per_buffer=CHUNK_SIZE)
-
-	listenerThread = threading.Thread(target=listen, args=(sessionCookie,))
-	listenerThread.daemon = True
-	listenerThread.start()
-
-	ws = create_connection("ws://localhost:8080/api/audio/stream/upload", cookie="session="+sessionCookie)
-	result = ws.recv()
-	print "Received '%s'" % result
-
-	while 1:
-		# little endian, signed short
-		snd_data = array('h', stream.read(CHUNK_SIZE))
-		if byteorder == 'big':
-			snd_data.byteswap()
-
-		byte_data = pack('<' + ('h' * len(snd_data)), *snd_data)
-
-		ws.send_binary(byte_data)
-
-	ws.close()
 
 
 def runAudioCapture(status, statusLock):
@@ -218,14 +184,46 @@ def runAudioCapture(status, statusLock):
 
 
 def streamAudio(status, statusLock, sessionCookie):
-	with statusLock:
-		streamingAudio = copy(status.streamingAudio)
 
-	if streamingAudio:
-		print ("Streaming..")
-		stream_audio(sessionCookie)
-	else:
-		print("Not streaming.")
+
+	while True:
+		with statusLock:
+			streamingAudio = copy(status.streamingAudio)
+
+		if streamingAudio:
+			print("Audio Streaming..")
+			sessionCookie = requests.utils.dict_from_cookiejar(sessionCookie)['session']
+
+			stream = pyaudio.PyAudio().open(format=FORMAT, channels=1, rate=RATE,
+							input=True, output=True,
+							frames_per_buffer=CHUNK_SIZE)
+
+			listenerThread = threading.Thread(target=listen, args=(sessionCookie,))
+			listenerThread.daemon = True
+			# listenerThread.start()
+
+			ws = create_connection("ws://localhost:8080/api/pixhack/audio/stream/upload", cookie="session=" + sessionCookie)
+			result = ws.recv()
+			print "Received '%s'" % result
+
+			while streamingAudio:
+				# little endian, signed short
+				snd_data = array('h', stream.read(CHUNK_SIZE))
+				if byteorder == 'big':
+					snd_data.byteswap()
+
+				byte_data = pack('<' + ('h' * len(snd_data)), *snd_data)
+
+				ws.send_binary(byte_data)
+				with statusLock:
+					streamingAudio = copy(status.streamingAudio)
+
+
+			ws.close()
+			print("Stopping audio stream.")
+
+
+
 
 
 if __name__ == '__main__':
