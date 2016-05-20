@@ -6,7 +6,7 @@ import json
 import Queue
 import time
 from copy import copy
-
+import os
 
 
 
@@ -22,7 +22,6 @@ class mqttClient:
 			self.client = ibmiotf.device.Client(options)
 			self.client.commandCallback = self.commandCallback
 			self.client.connect()
-			# self.startPings()
 
 		except ibmiotf.ConnectionException as e:
 			print (e)
@@ -36,13 +35,6 @@ class mqttClient:
 			self.mavCommandList.put(MavCommand(cmd.data['name'], cmd.data['args']))
 		else:
 			print ("Unknown command: " % cmd.command)
-
-	def startPings(self):
-		threading.Timer(10.0, self.startPings).start()
-		# Send ping
-		pingMessage = {'temp' : '24'}
-		self.client.publishEvent("ping","json", pingMessage)
-		print ("Ping ")
 
 	def sendSensorReadings(self, GPSData, sensorData, status, statusLock):
 		# TODO add condition to set to none if time of reading is old
@@ -58,10 +50,12 @@ class mqttClient:
 
 		with statusLock:
 			status.mqtt_count += 1
+			print(status.mqtt_count)
 
 
 def runIot(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, piCommandList):
-	client = mqttClient("python/config.conf", mavCommandList, piCommandList)
+	#client = mqttClient("python/config.conf", mavCommandList, piCommandList)
+	client = mqttClient("python/" + status.dronename + ".conf", mavCommandList, piCommandList)
 
 	while True:
 		with GPSLock:
@@ -80,6 +74,7 @@ from main import MavCommand, Status, Sensors, GPS
 if __name__ == '__main__':
 	gps = GPS()
 	status = Status()
+	status.mqtt_interval = 1000
 	sensors = Sensors()
 	mavCommandList = Queue.Queue()  # Thread Safe FIFO
 	piCommandList = Queue.Queue()

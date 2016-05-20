@@ -20,7 +20,7 @@ class Status:
 		self.battery_remaining = 0
 		self.mav_status = 0
 		self.mav_mode = 0
-		self.mqttInterval = 2000
+		self.mqtt_interval = 2000
 		self.mqtt_count = 0
 		self.home = [0.0, 0.0, 0]
 		self.uploadingImages = True
@@ -57,7 +57,7 @@ class MavCommand:
 import requests
 from requests.auth import HTTPBasicAuth
 
-from audioCapture import runAudioCapture, streamAudio
+#from audioCapture import runAudioCapture, streamAudio
 from fileSend import send_latest_image, send_latest_audio
 from imageCapture import takePhotos
 #from sensorRead import sensorReadLoop
@@ -67,7 +67,22 @@ from mavconnection import mavLoop
 from fileSend import send_test_images
 
 
+def dummyGPS(GPSLock, GPS, direction):
+	while True:
+		with GPSLock:
+			GPS.latitude += float(direction) * 0.0005
+			GPS.longitude += float(direction) * 0.0005
+		time.sleep(1)
+
+
 if __name__ == '__main__':
+
+	status = Status()
+	status.username = sys.argv[1]
+	status.password = sys.argv[2]
+	status.dronename = sys.argv[3]
+	direction = sys.argv[4]
+
 
 	url = "http://192.168.1.77"
 	port = ":8080"
@@ -80,14 +95,16 @@ if __name__ == '__main__':
 		sys.exit(0)
 
 	# Try logging in
-	req = requests.post(url + port + "/login", auth=HTTPBasicAuth('jake','pass'))
+	req = requests.post(url + port + "/login", auth=HTTPBasicAuth(status.username, status.password))
 	sessionCookie = req.cookies
 
 	gps = GPS()
 	gps.longitude = -0.18
 	gps.latitude = 51.5
+
 	sensors = Sensors()
-	status = Status()
+
+
 	mavCommandList = Queue.Queue() # Thread Safe FIFO
 	piCommandList = Queue.Queue()
 
@@ -112,8 +129,8 @@ if __name__ == '__main__':
 	#imageThread.start()
 
 	# Thread to capture audio
-	audioThread = threading.Thread(target=runAudioCapture, args=(status, statusLock))
-	audioThread.daemon = True
+	#audioThread = threading.Thread(target=runAudioCapture, args=(status, statusLock))
+	#audioThread.daemon = True
 	#audioThread.start()
 
 	# Thread to upload images
@@ -131,9 +148,11 @@ if __name__ == '__main__':
 	mqttThread.daemon = True
 	mqttThread.start()
 
-	streamingThread = threading.Thread(target=streamAudio, args=(status, statusLock, sessionCookie))
-	streamingThread.daemon = True
-	streamingThread.start()
+	dummyGPS(GPSLock, gps, direction)
+
+	#streamingThread = threading.Thread(target=streamAudio, args=(status, statusLock, sessionCookie))
+	#streamingThread.daemon = True
+	#streamingThread.start()
 
 	while True:
 		if piCommandList.qsize() > 0:

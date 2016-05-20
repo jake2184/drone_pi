@@ -7,7 +7,7 @@ from copy import copy
 
 
 def send_latest_audio(url, port, sessionCookie, gps, GPSLock, status, statusLock):
-	endPoint="/api/audio"
+	endPoint="/api/"+status.dronename+"/audio"
 	lastSent = ""
 
 	while True:
@@ -37,7 +37,7 @@ def send_latest_audio(url, port, sessionCookie, gps, GPSLock, status, statusLock
 
 
 def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock):
-	endPoint = "/api/images"
+	endPoint = "/api/"+status.dronename+"/images"
 	lastSent = ""
 
 	while True:
@@ -71,7 +71,7 @@ def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock
 
 
 def send_test_images(url, port, sessionCookie, gps, GPSLock, status, statusLock):
-	endPoint = "/api/images/"
+	endPoint = "/api/"+status.dronename+"/images/"
 	lastSent = ""
 
 	fileList = listdir("test/fire")
