@@ -25,11 +25,12 @@ def send_latest_audio(url, port, sessionCookie, gps, GPSLock, status, statusLock
 
 				with GPSLock:
 					GPSData = copy(gps)
-
-				req = requests.post(url+port+endPoint+ fileToSend[:-4], data=GPSData.__dict__, files=files, cookies=sessionCookie)
-				if req.status_code == 200:
-					print("Sent " + fileToSend)
-
+				try:
+					req = requests.post(url+port+endPoint+ fileToSend[:-4], data=GPSData.__dict__, files=files, cookies=sessionCookie)
+					if req.status_code == 200:
+						print("Sent " + fileToSend)
+				except requests.exceptions.RequestException as e:
+						continue
 				else:
 					print("Failed to send " + fileToSend)
 					print("Server response: " + str(req.status_code))
@@ -60,11 +61,12 @@ def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock
 
 				with GPSLock:
 					GPSData = copy(gps)
-
-				req = requests.post(url+port+endPoint+ fileToSend[:-4], data=GPSData.__dict__, files=files, cookies=sessionCookie)
-				if req.status_code == 200:
-					print("Sent " + fileToSend)
-
+				try:
+					req = requests.post(url+port+endPoint+ fileToSend[:-4], data=GPSData.__dict__, files=files, cookies=sessionCookie)
+					if req.status_code == 200:
+						print("Sent " + fileToSend)
+				except requests.exceptions.RequestException as e:
+					continue
 				else:
 					print("Failed to send " + fileToSend)
 					print("Server response: " + str(req.status_code))
@@ -92,11 +94,14 @@ def send_test_images(url, port, sessionCookie, gps, GPSLock, status, statusLock)
 					GPSData = copy(gps)
 
 				GPSData.time = fileToSend[:-4]
-				req = requests.post(url + port + endPoint + fileToSend[:-4], data=GPSData.__dict__, files=files, cookies=sessionCookie)
-				if req.status_code == 200:
-					print("Sent " + fileToSend)
-					lastSent = fileToSend
-					fileList.remove(fileToSend)
+				try:
+					req = requests.post(url + port + endPoint + fileToSend[:-4], data=GPSData.__dict__, files=files, cookies=sessionCookie)
+					if req.status_code == 200:
+						print("Sent " + fileToSend)
+						lastSent = fileToSend
+						fileList.remove(fileToSend)
+				except requests.exceptions.RequestException:
+					continue
 				else:
 					print("Failed to send " + fileToSend)
 					print("Server response: " + str(req.status_code))
