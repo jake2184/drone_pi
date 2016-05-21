@@ -63,7 +63,7 @@ def dummySensorReadLoop(sensors, sensorLock):
     while True:
 
         with sensorLock:
-            sensors.temperature = 45 + (random.random() - 0.5) * 5
+            sensors.temperature = 20 + (random.random() - 0.5) * 5
             sensors.altitude = 100 + (random.random() - 0.5) * 10
             sensors.airPurity = 100 + random.random() * 500
 

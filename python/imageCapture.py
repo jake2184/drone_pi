@@ -24,7 +24,7 @@ def takePhotos(status, statusLock):
 	while True:
 		with statusLock:
 			capturingImages = copy(status.capturingImages)
-			interval = copy(status.interval)
+			interval = copy(status.photoInterval)
 
 		if capturingImages:
 			filename = "photos/" + str(int(time.time()*1000)) + ".jpg"

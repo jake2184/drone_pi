@@ -7,7 +7,7 @@ from copy import copy
 
 
 def send_latest_audio(url, port, sessionCookie, gps, GPSLock, status, statusLock):
-	endPoint="/api/"+status.dronename+"/audio"
+	endPoint="/api/"+status.dronename+"/audio/"
 	lastSent = ""
 
 	while True:
@@ -20,15 +20,16 @@ def send_latest_audio(url, port, sessionCookie, gps, GPSLock, status, statusLock
 			fileToSend = max(fileList)
 
 			if fileToSend != lastSent:
+				lastSent = fileToSend
 				files = {'audio' : open("audio/" + fileToSend, 'rb')}
 
 				with GPSLock:
 					GPSData = copy(gps)
 
-				req = requests.post(url+port+endPoint, data=GPSData.__dict__, files=files, cookies=sessionCookie)
+				req = requests.post(url+port+endPoint+ fileToSend[:-4], data=GPSData.__dict__, files=files, cookies=sessionCookie)
 				if req.status_code == 200:
 					print("Sent " + fileToSend)
-					lastSent = fileToSend
+
 				else:
 					print("Failed to send " + fileToSend)
 					print("Server response: " + str(req.status_code))
@@ -37,7 +38,7 @@ def send_latest_audio(url, port, sessionCookie, gps, GPSLock, status, statusLock
 
 
 def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock):
-	endPoint = "/api/"+status.dronename+"/images"
+	endPoint = "/api/"+status.dronename+"/images/"
 	lastSent = ""
 
 	while True:
@@ -54,15 +55,16 @@ def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock
 			fileToSend = max(fileList)
 
 			if fileToSend != lastSent:
+				lastSent = fileToSend
 				files = {'image':open("photos/" + fileToSend, 'rb')}
 
 				with GPSLock:
 					GPSData = copy(gps)
 
-				req = requests.post(url+port+endPoint, data=GPSData.__dict__, files=files, cookies=sessionCookie)
+				req = requests.post(url+port+endPoint+ fileToSend[:-4], data=GPSData.__dict__, files=files, cookies=sessionCookie)
 				if req.status_code == 200:
 					print("Sent " + fileToSend)
-					lastSent = fileToSend
+
 				else:
 					print("Failed to send " + fileToSend)
 					print("Server response: " + str(req.status_code))

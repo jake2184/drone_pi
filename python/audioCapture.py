@@ -11,7 +11,7 @@ import pyaudio
 import wave
 import time
 
-from main import Status
+
 from websocket import create_connection
 
 THRESHOLD = 500
@@ -172,6 +172,7 @@ def listen(sessionCookie):
 
 
 def runAudioCapture(status, statusLock):
+	from main import Status
 	while True:
 		with statusLock:
 			capturingAudio = copy(status.capturingAudio)
