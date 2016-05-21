@@ -29,11 +29,12 @@ def send_latest_audio(url, port, sessionCookie, gps, GPSLock, status, statusLock
 					req = requests.post(url+port+endPoint+ fileToSend[:-4], data=GPSData.__dict__, files=files, cookies=sessionCookie)
 					if req.status_code == 200:
 						print("Sent " + fileToSend)
+					else:
+						print("Failed to send " + fileToSend)
+						print("Server response: " + str(req.status_code))
 				except requests.exceptions.RequestException as e:
 						continue
-				else:
-					print("Failed to send " + fileToSend)
-					print("Server response: " + str(req.status_code))
+
 
 		time.sleep(1)
 
@@ -65,11 +66,12 @@ def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock
 					req = requests.post(url+port+endPoint+ fileToSend[:-4], data=GPSData.__dict__, files=files, cookies=sessionCookie)
 					if req.status_code == 200:
 						print("Sent " + fileToSend)
+					else:
+						print("Failed to send " + fileToSend)
+						print("Server response: " + str(req.status_code))
 				except requests.exceptions.RequestException as e:
 					continue
-				else:
-					print("Failed to send " + fileToSend)
-					print("Server response: " + str(req.status_code))
+
 
 		time.sleep(1)
 
@@ -100,9 +102,10 @@ def send_test_images(url, port, sessionCookie, gps, GPSLock, status, statusLock)
 						print("Sent " + fileToSend)
 						lastSent = fileToSend
 						fileList.remove(fileToSend)
+					else:
+						print("Failed to send " + fileToSend)
+						print("Server response: " + str(req.status_code))
 				except requests.exceptions.RequestException:
 					continue
-				else:
-					print("Failed to send " + fileToSend)
-					print("Server response: " + str(req.status_code))
+
 		time.sleep(1)
