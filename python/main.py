@@ -152,9 +152,9 @@ if __name__ == '__main__':
 
 	#dummyGPS(GPSLock, gps, direction)
 
-	#streamingThread = threading.Thread(target=streamAudio, args=(status, statusLock, sessionCookie))
-	#streamingThread.daemon = True
-	#streamingThread.start()
+	streamingThread = threading.Thread(target=streamAudio, args=(status, statusLock, sessionCookie))
+	streamingThread.daemon = True
+	streamingThread.start()
 
 	while True:
 		if piCommandList.qsize() > 0:

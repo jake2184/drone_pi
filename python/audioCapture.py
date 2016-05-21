@@ -172,7 +172,7 @@ def listen(sessionCookie):
 
 
 def runAudioCapture(status, statusLock):
-	from main import Status
+
 	while True:
 		with statusLock:
 			capturingAudio = copy(status.capturingAudio)
@@ -231,6 +231,7 @@ if __name__ == '__main__':
 	#print("please speak a word into the microphone")
 	#record_to_file('audio', "mp3")
 	#print("done - result written to demo.wav")
+	from main import Status
 	import requests, sys
 	from requests.auth import HTTPBasicAuth
 	url = "http://localhost"
