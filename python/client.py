@@ -38,6 +38,7 @@ class mqttClient:
 
 	def sendSensorReadings(self, GPSData, sensorData, status, statusLock):
 		# TODO add condition to set to none if time of reading is old
+
 		sensorReadings = {
 			'time': int(time.time() * 1000),
 			'location': [GPSData.latitude, GPSData.longitude],
@@ -52,6 +53,11 @@ class mqttClient:
 			status.mqtt_count += 1
 			print(status.mqtt_count)
 
+	def sendStatus(self, status):
+		status.time = int(time.time()*1000)
+		self.client.publishEvent("status", "json", status)
+
+
 
 def runIot(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, piCommandList):
 	#client = mqttClient("python/config.conf", mavCommandList, piCommandList)
@@ -64,9 +70,10 @@ def runIot(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList
 			sensorData = copy(sensors)
 			sensors.reset()
 		with statusLock:
-			sending = copy(status.uploadingSensors)
-		if sending:
+			statusToSend = copy(status)
+		if statusToSend.uploadingSensors:
 			client.sendSensorReadings(GPSData, sensorData, status, statusLock)
+		client.sendStatus(statusToSend)
 		time.sleep(status.mqtt_interval / 1000.0)
 
 
