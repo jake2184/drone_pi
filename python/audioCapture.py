@@ -1,6 +1,6 @@
 #https://stackoverflow.com/questions/892199/detect-record-audio-in-python
-
-
+import threading
+import requests
 from sys import byteorder
 from array import array
 from struct import pack, unpack
@@ -203,22 +203,24 @@ def streamAudio(status, statusLock, sessionCookie):
 			listenerThread.daemon = True
 			# listenerThread.start()
 
-			ws = create_connection("ws://localhost:8080/api/pixhack/audio/stream/upload", cookie="session=" + sessionCookie)
+			ws = create_connection("ws://192.168.1.77:8080/api/pixhack/audio/stream/upload", cookie="session=" + sessionCookie)
 			result = ws.recv()
 			print "Received '%s'" % result
 
 			while streamingAudio:
 				# little endian, signed short
-				snd_data = array('h', stream.read(CHUNK_SIZE))
-				if byteorder == 'big':
-					snd_data.byteswap()
+				try:
+					snd_data = array('h', stream.read(CHUNK_SIZE))
+					if byteorder == 'big':
+						snd_data.byteswap()
 
-				byte_data = pack('<' + ('h' * len(snd_data)), *snd_data)
+					byte_data = pack('<' + ('h' * len(snd_data)), *snd_data)
 
-				ws.send_binary(byte_data)
-				with statusLock:
-					streamingAudio = copy(status.streamingAudio)
-
+					ws.send_binary(byte_data)
+					with statusLock:
+						streamingAudio = copy(status.streamingAudio)
+				except IOError:
+					continue
 
 			ws.close()
 			print("Stopping audio stream.")
