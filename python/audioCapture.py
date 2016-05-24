@@ -80,11 +80,15 @@ def record(volumeDetection, duration):
 	start and end, and pads with 0.5 seconds of
 	blank sound to make sure VLC et al can play
 	it without getting chopped off.
+
 	"""
-	p = pyaudio.PyAudio()
-	stream = p.open(format=FORMAT, channels=1, rate=RATE,
-		input=True, output=True,
-		frames_per_buffer=CHUNK_SIZE)
+	try:
+		p = pyaudio.PyAudio()
+		stream = p.open(format=FORMAT, channels=1, rate=RATE,
+			input=True, output=True,
+			frames_per_buffer=CHUNK_SIZE)
+	except:
+		return [], []
 
 	num_silent = 0
 	snd_started = False
@@ -135,7 +139,7 @@ def record(volumeDetection, duration):
 
 def writeMP3File(fileName, data):
 	pipe = sp.Popen([
-	   "ffmpeg\\bin\\ffmpeg.exe",
+	   "ffmpeg",
 	   "-f", 's16le', # means 16bit input
 	   "-acodec", "pcm_s16le", # means raw 16bit input
 	   '-r', "44100", # the input will have 44100 Hz
@@ -212,19 +216,20 @@ def streamAudio(status, statusLock, sessionCookie):
 
 		if streamingAudio:
 			print("Audio Streaming..")
-			sessionCookie = requests.utils.dict_from_cookiejar(sessionCookie)['session']
-
-			stream = pyaudio.PyAudio().open(format=FORMAT, channels=1, rate=RATE,
+			session = requests.utils.dict_from_cookiejar(sessionCookie)['session']
+			try:
+				stream = pyaudio.PyAudio().open(format=FORMAT, channels=1, rate=RATE,
 							input=True, output=True,
 							frames_per_buffer=CHUNK_SIZE)
-
+			except:
+				continue
 			listenerThread = threading.Thread(target=listen, args=(sessionCookie,))
 			listenerThread.daemon = True
 			# listenerThread.start()
 
 			try:
 				endpoint = "ws://" + status.host + "/api/" + status.dronename + "/audio/stream/upload"
-				ws = create_connection("ws://" + status.host + "/api/" + status.dronename + "/audio/stream/upload", cookie="session=" + sessionCookie)
+				ws = create_connection("ws://" + status.host + "/api/" + status.dronename + "/audio/stream/upload", cookie="session=" + session)
 			except:
 				print("Could not connect to websocket " + endpoint)
 				continue
