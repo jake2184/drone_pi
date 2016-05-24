@@ -1,9 +1,9 @@
 #!/bin/bash
 
 
-URL=192.168.1.77:8080
-
-curl -X POST -u jake:pass $URL/login -c cookie
+#URL=192.168.1.77:8080
+URL=https://drone-nodes.eu-gb.mybluemix.net
+curl -X POST -u jake:pass $URL/login -c cookie -d ""
 
 
 for i in $( ls photos );
