@@ -17,20 +17,22 @@ class GPS:
 class Status:
 	def __init__(self):
 		self.battery_voltage = 0.0
-		self.battery_remaining = 0
+		self.battery_remaining = 80
 		self.mav_status = 0
 		self.mav_mode = 0
 		self.mqtt_interval = 2000
-		self.photoInterval = 1
 		self.mqtt_count = 0
 		self.home = [0.0, 0.0, 0]
 		self.uploadingImages = True
 		self.uploadingAudio = True
 		self.uploadingSensors = True
-		self.capturingAudio = False
+		self.capturingAudio = True
 		self.capturingImages = True
 		self.photoInterval = 1000
-		self.streamingAudio = True #TODO change
+		self.streamingAudio = False #TODO change
+		self.host = ""
+		self.volumeDetection = False
+		self.duration = 5000
 
 
 class Sensors:
@@ -79,24 +81,27 @@ def dummyGPS(GPSLock, GPS, direction):
 if __name__ == '__main__':
 
 	status = Status()
-	status.username = sys.argv[1]
-	status.password = sys.argv[2]
-	status.dronename = sys.argv[3]
-	direction = sys.argv[4]
+	status.host = sys.argv[1]
+	status.username = sys.argv[2]
+	status.password = sys.argv[3]
+	status.dronename = sys.argv[4]
+	direction = sys.argv[5]
 
-	print(sys.argv[3])
-	url = "http://192.168.1.77"
-	port = ":8080"
+	port = ""
+
+	url = "http://" + status.host
+
 
 	# Check we can connect to Bluemix
 	try:
-		req = requests.get(url + port + "/login", timeout=2)
+		req = requests.get(url + "/login", timeout=2)
 	except requests.exceptions.RequestException:
-		print ("Cannot connect to " + url + port)
+		print ("Cannot connect to " + url )
 		sys.exit(0)
 
 	# Try logging in
-	req = requests.post(url + port + "/login", auth=HTTPBasicAuth(status.username, status.password))
+	req = requests.post(url +  "/login", auth=HTTPBasicAuth(status.username, status.password))
+	print(str(req.status_code) + " " + str(req.cookies))
 	sessionCookie = req.cookies
 
 	gps = GPS()
@@ -159,35 +164,34 @@ if __name__ == '__main__':
 	while True:
 		if piCommandList.qsize() > 0:
 			command = piCommandList.get()
-
+			print(command)
 			# TODO Args will be parsed as a float. If that fails, as a string
+
 			with statusLock:
-				if command.name == "setUploadImages":
+				# Could change some to work on status.__dict__
+				if command.name == "uploadingImages":
 					status.uploadingImages = command.args[0]
-				elif command.name == "setUploadAudio":
-					status.uploadingAudio = command.args[0]
-				elif command.name == "setUploadSensors":
+				elif command.name == "uploadingSensors":
 					status.uploadingSensors = command.args[0]
-				elif command.name == "setUploadStream":
-					if command.args[0] == "IMAGES":
-						status.uploadingImages = command.args[1]
-					elif command.args[0] == "AUDIO":
-						status.uploadingAudio = command.args[1]
-					elif command.args[0] == "SENSORS":
-						status.uploadingSensors = command.args[1]
-				elif command.name == "captureAudio":
-					status.capturingAudio = command.args[0]
-				elif command.name == "captureImages":
+				elif command.name == "capturingImages":
 					status.capturingImages = command.args[0]
 				elif command.name == "photoInterval":
 					status.photoInterval = command.args[0]
 				elif command.name == "mqttInterval":
 					status.mqttInterval = command.args[0]
-				elif command.name == "enableAudioStream":
-					status.capturingAudio = False
-					status.streamingAudio = True
+				elif command.name == "capturingAudio":
+					status.capturingAudio = command.args[0]
+					status.streamingAudio = not status.capturingAudio
+				elif command.name == "uploadingAudio":
+					status.uploadingAudio = command.args[0]
+				elif command.name == "streamingAudio":
+					status.streamingAudio = command.args[0]
+					status.capturingAudio = not status.streamingAudio
+				elif command.name == "duration":
+					status.duration = command.args[0]
+				else:
+					print("Unknown command " + command.name)
 
-				# Could change some of the above to work on status.__dict__
 		time.sleep(0.5)
 
 

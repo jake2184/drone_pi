@@ -55,7 +55,8 @@ class mqttClient:
 
 	def sendStatus(self, status):
 		status.time = int(time.time()*1000)
-		self.client.publishEvent("status", "json", status)
+		del status.password
+		self.client.publishEvent("status", "json", status.__dict__)
 
 
 
@@ -74,6 +75,7 @@ def runIot(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList
 		if statusToSend.uploadingSensors:
 			client.sendSensorReadings(GPSData, sensorData, status, statusLock)
 		client.sendStatus(statusToSend)
+
 		time.sleep(status.mqtt_interval / 1000.0)
 
 

@@ -71,7 +71,7 @@ def add_silence(snd_data, seconds):
 	return r
 
 
-def record():
+def record(volumeDetection, duration):
 	"""
 	Record a word or words from the microphone and
 	return the data as an array of signed shorts.
@@ -91,22 +91,36 @@ def record():
 
 	r = array('h')
 
-	while 1:
-		# little endian, signed short
-		snd_data = array('h', stream.read(CHUNK_SIZE))
-		if byteorder == 'big':
-			snd_data.byteswap()
-		r.extend(snd_data)
+	if volumeDetection :
+		while 1:
+			# little endian, signed short
+			snd_data = array('h', stream.read(CHUNK_SIZE))
+			if byteorder == 'big':
+				snd_data.byteswap()
+			r.extend(snd_data)
 
-		silent = is_silent(snd_data)
-		#print(silent)
-		if silent and snd_started:
-			num_silent += 1
-		elif not silent and not snd_started:
-			snd_started = True
+			silent = is_silent(snd_data)
+			#print(silent)
+			if silent and snd_started:
+				num_silent += 1
+			elif not silent and not snd_started:
+				snd_started = True
 
-		if snd_started and num_silent > 20:
-			break
+			if snd_started and num_silent > 20:
+				break
+
+	else :
+		timeBegin = time.time()
+		timeNow = timeBegin
+		while timeNow - timeBegin < duration / 1000.0 :
+			# little endian, signed short
+			snd_data = array('h', stream.read(CHUNK_SIZE))
+			if byteorder == 'big':
+				snd_data.byteswap()
+			r.extend(snd_data)
+
+			timeNow = time.time()
+
 
 	sample_width = p.get_sample_size(FORMAT)
 	stream.stop_stream()
@@ -134,9 +148,9 @@ def writeMP3File(fileName, data):
 	out, err = pipe.communicate(data)
 
 
-def record_to_file(path, format):
+def record_to_file(path, format, volumeDetection, duration):
 	"Records from the microphone and outputs the resulting data to 'path'"
-	sample_width, data = record()
+	sample_width, data = record(volumeDetection, duration)
 	data = pack('<' + ('h'*len(data)), *data)
 	currentTime = int(time.time() * 1000)
 
@@ -176,9 +190,12 @@ def runAudioCapture(status, statusLock):
 	while True:
 		with statusLock:
 			capturingAudio = copy(status.capturingAudio)
+			volumeDetection = copy(status.volumeDetection)
+			duration = copy(status.duration)
+
 
 		if capturingAudio:
-			record_to_file("audio", "mp3")
+			record_to_file("audio", "mp3", volumeDetection, duration)
 			print ("Made recording")
 		else:
 			time.sleep(1)
@@ -203,7 +220,13 @@ def streamAudio(status, statusLock, sessionCookie):
 			listenerThread.daemon = True
 			# listenerThread.start()
 
-			ws = create_connection("ws://192.168.1.77:8080/api/pixhack/audio/stream/upload", cookie="session=" + sessionCookie)
+			try:
+				endpoint = "ws://" + status.host + "/api/" + status.dronename + "/audio/stream/upload"
+				ws = create_connection("ws://" + status.host + "/api/" + status.dronename + "/audio/stream/upload", cookie="session=" + sessionCookie)
+			except:
+				print("Could not connect to websocket " + endpoint)
+				continue
+
 			result = ws.recv()
 			print "Received '%s'" % result
 
