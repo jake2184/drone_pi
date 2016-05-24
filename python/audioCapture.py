@@ -80,7 +80,6 @@ def record(volumeDetection, duration):
 	start and end, and pads with 0.5 seconds of
 	blank sound to make sure VLC et al can play
 	it without getting chopped off.
-
 	"""
 	try:
 		p = pyaudio.PyAudio()
@@ -89,6 +88,11 @@ def record(volumeDetection, duration):
 			frames_per_buffer=CHUNK_SIZE)
 	except:
 		return [], []
+	p = pyaudio.PyAudio()
+
+	stream = p.open(format=FORMAT, channels=1, rate=RATE,
+		input=True, output=True,
+		frames_per_buffer=CHUNK_SIZE)
 
 	num_silent = 0
 	snd_started = False
@@ -139,7 +143,7 @@ def record(volumeDetection, duration):
 
 def writeMP3File(fileName, data):
 	pipe = sp.Popen([
-	   "ffmpeg",
+	   "ffmpeg\\bin\\ffmpeg.exe",
 	   "-f", 's16le', # means 16bit input
 	   "-acodec", "pcm_s16le", # means raw 16bit input
 	   '-r', "44100", # the input will have 44100 Hz
@@ -218,7 +222,8 @@ def streamAudio(status, statusLock, sessionCookie):
 			print("Audio Streaming..")
 			session = requests.utils.dict_from_cookiejar(sessionCookie)['session']
 			try:
-				stream = pyaudio.PyAudio().open(format=FORMAT, channels=1, rate=RATE,
+				p = pyaudio.pyAudio()
+				stream = p.open(format=FORMAT, channels=1, rate=RATE,
 							input=True, output=True,
 							frames_per_buffer=CHUNK_SIZE)
 			except:
@@ -253,6 +258,9 @@ def streamAudio(status, statusLock, sessionCookie):
 					continue
 
 			ws.close()
+			stream.stop_stream()
+			stream.close()
+			p.terminate()
 			print("Stopping audio stream.")
 
 
