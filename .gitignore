@@ -2,3 +2,5 @@ photos
 audio
 *.pyc
 *.log
+.idea
+ffmpeg
