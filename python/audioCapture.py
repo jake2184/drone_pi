@@ -156,7 +156,9 @@ def record_to_file(path, format, volumeDetection, duration):
 
 	print(format)
 	if format == "mp3":
-		writeMP3File(path + "/" + str(currentTime) + ".mp3", data)
+		here = path + "/" + str(currentTime) + ".mp3"
+		print(here)
+		writeMP3File(here, data)
 	else:
 		wf = wave.open(path + "/" + str(currentTime) + ".wav" , 'wb')
 		wf.setnchannels(1)
