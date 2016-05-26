@@ -132,23 +132,23 @@ if __name__ == '__main__':
 	# Thread to capture photos
 	imageThread = threading.Thread(target=takePhotos, args=(status, statusLock))
 	imageThread.daemon = True
-	imageThread.start()
+	#imageThread.start()
 
 	# Thread to capture audio
 	audioThread = threading.Thread(target=runAudioCapture, args=(status, statusLock))
 	audioThread.daemon = True
-	audioThread.start()
+	#audioThread.start()
 
 	# Thread to upload images
 	#imageUploadThread = threading.Thread(target=send_test_images, args=(url, port, sessionCookie, gps, GPSLock, status, statusLock))
 	imageUploadThread = threading.Thread(target=send_latest_image, args=(url, port, sessionCookie, gps, GPSLock, status, statusLock))
 	imageUploadThread.daemon = True
-	imageUploadThread.start()
+	#imageUploadThread.start()
 
 	# Thread to upload audio
 	audioUploadThread = threading.Thread(target=send_latest_audio, args=(url, port, sessionCookie, gps, GPSLock, status, statusLock))
 	audioUploadThread.daemon = True
-	audioUploadThread.start()
+	#audioUploadThread.start()
 
 	# Thread to regularly send/receive data
 	mqttThread = threading.Thread(target=runIot, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, piCommandList))
@@ -159,13 +159,13 @@ if __name__ == '__main__':
 
 	streamingThread = threading.Thread(target=streamAudio, args=(status, statusLock, sessionCookie))
 	streamingThread.daemon = True
-	streamingThread.start()
+	#streamingThread.start()
 
 	while True:
 		if piCommandList.qsize() > 0:
 			command = piCommandList.get()
-			time = int(time.time() * 1000)
-			print('Arrived: ' + str(time) + '  Triggered: ' + command.name  + '  Delay: ' + str(time - int(command.name)))
+			comtime = int(time.time() * 1000)
+			print('Arrived: ' + str(comtime) + '  Triggered: ' + command.name  + '  Delay: ' + str(comtime - int(command.name)))
 			print(command)
 			# TODO Args will be parsed as a float. If that fails, as a string
 

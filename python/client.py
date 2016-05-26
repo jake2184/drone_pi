@@ -51,7 +51,7 @@ class mqttClient:
 
 		with statusLock:
 			status.mqtt_count += 1
-			print(status.mqtt_count)
+			#print(status.mqtt_count)
 
 	def sendStatus(self, status):
 		status.time = int(time.time()*1000)
