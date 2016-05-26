@@ -164,6 +164,8 @@ if __name__ == '__main__':
 	while True:
 		if piCommandList.qsize() > 0:
 			command = piCommandList.get()
+			time = int(time.time() * 1000)
+			print('Arrived: ' + str(time) + '  Triggered: ' + command.name  + '  Delay: ' + str(time - int(command.name)))
 			print(command)
 			# TODO Args will be parsed as a float. If that fails, as a string
 
