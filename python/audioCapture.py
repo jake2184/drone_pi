@@ -162,10 +162,9 @@ def record_to_file(path, format, volumeDetection, duration):
 	data = pack('<' + ('h'*len(data)), *data)
 	currentTime = int(time.time() * 1000)
 
-	print(format)
+
 	if format == "mp3":
 		here = path + "/" + str(currentTime) + ".mp3"
-		print(here)
 		writeMP3File(here, data)
 	else:
 		wf = wave.open(path + "/" + str(currentTime) + ".wav" , 'wb')

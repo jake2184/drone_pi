@@ -68,7 +68,7 @@ def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock
 						print("Sent " + fileToSend)
 					else:
 						print("Failed to send " + fileToSend)
-						print("Server response: " + str(req.status_code))
+						print("Server response: " + str(req.status_code) + " " + req.text)
 				except requests.exceptions.RequestException as e:
 					continue
 
@@ -80,32 +80,33 @@ def send_test_images(url, port, sessionCookie, gps, GPSLock, status, statusLock)
 	endPoint = "/api/"+status.dronename+"/images/"
 	lastSent = ""
 
-	fileList = listdir("test/fire")
+
 
 	with statusLock:
 		sending = copy(status.uploadingImages)
 
-	for i in range(1, len(fileList)):
-		if sending:
-			fileToSend = min(fileList)
+	while True:
+		fileList = listdir("test/fire")
+		for i in range(1, len(fileList)):
+			if sending:
+				fileToSend = min(fileList)
 
-			if fileToSend != lastSent:
-				files = {'image':open("test/fire/" + fileToSend, 'rb')}
+				if fileToSend != lastSent:
+					files = {'image':open("test/fire/" + fileToSend, 'rb')}
 
-				with GPSLock:
-					GPSData = copy(gps)
+					with GPSLock:
+						GPSData = copy(gps)
 
-				GPSData.time = fileToSend[:-4]
-				try:
-					req = requests.post(url + port + endPoint + fileToSend[:-4], data=GPSData.__dict__, files=files, cookies=sessionCookie)
-					if req.status_code == 200:
-						print("Sent " + fileToSend)
-						lastSent = fileToSend
-						fileList.remove(fileToSend)
-					else:
-						print("Failed to send " + fileToSend)
-						print("Server response: " + str(req.status_code))
-				except requests.exceptions.RequestException:
-					continue
+					try:
+						req = requests.post(url + port + endPoint + str(int(time.time()*1000)), data=GPSData.__dict__, files=files, cookies=sessionCookie)
+						if req.status_code == 200:
+							print("Sent " + fileToSend)
+							lastSent = fileToSend
+							fileList.remove(fileToSend)
+						else:
+							print("Failed to send " + fileToSend)
+							print("Server response: " + str(req.status_code) + " " + req.text)
+					except requests.exceptions.RequestException:
+						continue
 
-		time.sleep(1)
+			time.sleep(1)
