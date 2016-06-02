@@ -33,6 +33,8 @@ class Status:
 		self.host = ""
 		self.volumeDetection = False
 		self.duration = 5000
+		self.photoResolution = "854x480"
+		self.photoQuality = 75
 
 
 class Sensors:

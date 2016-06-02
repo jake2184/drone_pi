@@ -7,10 +7,10 @@ curl -X POST -u jake:pass $URL/login -c cookie -d ""
 
 for i in {1..10}
 do
-    for i in $( ls audio );
+    for i in $( ls audioNoise );
     do
         DATE=$(($(date +%s%N)/1000000))
-        curl -b cookie  -X POST -F "audio=@audio/${i}" $URL/api/test/audioLatency/${i} -F time=${DATE}
+        curl -b cookie  -X POST -F "audio=@audioNoise/${i}" $URL/api/test/audioLatency/${i} -F time=${DATE}
     done
 done
 sleep 20

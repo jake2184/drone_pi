@@ -61,7 +61,6 @@ class mqttClient:
 
 
 def runIot(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, piCommandList):
-	#client = mqttClient("python/config.conf", mavCommandList, piCommandList)
 	client = mqttClient("python/" + status.dronename + ".conf", mavCommandList, piCommandList)
 
 	while True:

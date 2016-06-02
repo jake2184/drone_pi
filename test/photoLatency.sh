@@ -1,8 +1,8 @@
 #!/bin/bash
 
 
-URL=192.168.1.76:8080
-#URL=https://drone-nodes.eu-gb.mybluemix.net
+#URL=192.168.1.76:8080
+URL=https://drone-nodes.eu-gb.mybluemix.net
 curl -X POST -u jake:pass $URL/login -c cookie -d ""
 
 for i in {i..10}

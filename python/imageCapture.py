@@ -17,21 +17,27 @@ from copy import copy
 
 
 def takePhotos(status, statusLock):
-	# Photo dimensions and rotation
-	photoWidth = 640
-	photoHeight = 480
 
 	while True:
 		with statusLock:
+			# Get variables from status object
 			capturingImages = copy(status.capturingImages)
 			interval = copy(status.photoInterval)
+			resolution = copy(status.photoResolution)
+			quality = copy(status.photoQuality)
 
 		if capturingImages:
+			resolution = resolution.split('x')
+			# Create image file with current time as name
+
 			filename = "photos/" + str(int(time.time()*1000)) + ".jpg"
 			cmd = 'raspistill -o ' + filename + \
 				' -t 1 ' + \
-				' -w ' + str(photoWidth) + \
-				' -h ' + str(photoHeight)
+				' -w ' + resolution[0] + \
+				' -h ' + resolution[1] + \
+				' -q ' + str(quality)
 			pid = subprocess.call(cmd, shell=True)
-			print("Took image.")
+			#print("Took image.")
+
+		# Sleep for time interval (/1000 for milliseconds to secs)
 		time.sleep(interval / 1000)

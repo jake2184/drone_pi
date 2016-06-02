@@ -8,7 +8,7 @@ import grovepi
 
 
 
-
+# Function defined in pdf above for reading temperature sensor
 def read_temp_raw(temp_device_file):
     f = open(temp_device_file, 'r')
     lines = f.readlines()
@@ -36,6 +36,7 @@ def read_temp_raw2(temp_device_file):
     return lines
 
 
+# Repeatedly read sensor values
 def sensorReadLoop(sensors, sensorLock):
     # Port configuration
     air_sensor = 0
@@ -57,7 +58,7 @@ def sensorReadLoop(sensors, sensorLock):
             sensors.airPurity = airPurity
         time.sleep(0.5)
 
-
+# Create dummy data for sensors
 def dummySensorReadLoop(sensors, sensorLock):
 
     while True:
