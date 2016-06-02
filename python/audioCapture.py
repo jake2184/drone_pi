@@ -1,4 +1,6 @@
-#https://stackoverflow.com/questions/892199/detect-record-audio-in-python
+# Acknowledgement for aid from StackOverflow user `cryo`
+# https://stackoverflow.com/questions/892199/detect-record-audio-in-python
+
 import threading
 import requests
 from sys import byteorder
@@ -18,8 +20,7 @@ THRESHOLD = 500
 #CHUNK_SIZE = 1024
 CHUNK_SIZE = 8192
 FORMAT = pyaudio.paInt16
-RATE = 44100
-#RATE = 48000
+RATE = 44100 #TODO set from status
 
 
 def is_silent(snd_data):
@@ -78,8 +79,7 @@ def record(volumeDetection, duration):
 
 	Normalizes the audio, trims silence from the
 	start and end, and pads with 0.5 seconds of
-	blank sound to make sure VLC et al can play
-	it without getting chopped off.
+	blank sound
 	"""
 	try:
 		p = pyaudio.PyAudio()
@@ -141,31 +141,31 @@ def record(volumeDetection, duration):
 	return sample_width, r
 
 
+# Use ffmpeg to write to file
 def writeMP3File(fileName, data):
 	pipe = sp.Popen([
-	   "ffmpeg\\bin\\ffmpeg.exe",
-	   "-f", 's16le', # means 16bit input
-	   "-acodec", "pcm_s16le", # means raw 16bit input
-	   '-r', "44100", # the input will have 44100 Hz
-	   '-ac','1', # the input will have 1 channels (stereo)
-	   '-i', '-', # means that the input will arrive from the pipe
-	   '-vn', # means "don't expect any video input"
+		"ffmpeg\\bin\\ffmpeg.exe", # TODO change for pi
+		"-f", 's16le', # 16bit input
+		"-acodec", "pcm_s16le", # raw 16bit input
+		'-r', "44100", # sampling frequency
+		'-ac','1', # Mono channels
+		'-i', '-', # Input from the pipe
+		'-vn', # No video
 		fileName
 	], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
 
 	out, err = pipe.communicate(data)
 
 
+# Record audio to file
 def record_to_file(path, format, volumeDetection, duration):
-	"Records from the microphone and outputs the resulting data to 'path'"
 	sample_width, data = record(volumeDetection, duration)
 	data = pack('<' + ('h'*len(data)), *data)
 	currentTime = int(time.time() * 1000)
 
-
 	if format == "mp3":
-		here = path + "/" + str(currentTime) + ".mp3"
-		writeMP3File(here, data)
+		fileName = path + "/" + str(currentTime) + ".mp3"
+		writeMP3File(fileName, data)
 	else:
 		wf = wave.open(path + "/" + str(currentTime) + ".wav" , 'wb')
 		wf.setnchannels(1)
@@ -194,32 +194,35 @@ def listen(sessionCookie):
 		print("Not connected")
 
 
+# If enabled, repeatedly save audio files
 def runAudioCapture(status, statusLock):
 
 	while True:
 		with statusLock:
 			capturingAudio = copy(status.capturingAudio)
 			volumeDetection = copy(status.volumeDetection)
-			duration = copy(status.duration)
+			duration = copy(status.audioDuration)
+			fileType = copy(status.audioFileType)
 
 
 		if capturingAudio:
-			record_to_file("audio", "mp3", volumeDetection, duration)
-			print ("Made recording")
+			record_to_file("audio", fileType, volumeDetection, duration)
+			#print ("Made recording")
 		else:
 			time.sleep(1)
 
 
+# If enabled, upload audio stream
 def streamAudio(status, statusLock, sessionCookie):
-
 
 	while True:
 		with statusLock:
 			streamingAudio = copy(status.streamingAudio)
 
 		if streamingAudio:
-			print("Audio Streaming..")
+			#print("Audio Streaming..")
 			session = requests.utils.dict_from_cookiejar(sessionCookie)['session']
+			# Try to open record stream.
 			try:
 				p = pyaudio.pyAudio()
 				stream = p.open(format=FORMAT, channels=1, rate=RATE,
@@ -227,22 +230,25 @@ def streamAudio(status, statusLock, sessionCookie):
 							frames_per_buffer=CHUNK_SIZE)
 			except:
 				continue
-			listenerThread = threading.Thread(target=listen, args=(sessionCookie,))
-			listenerThread.daemon = True
+
+			# listenerThread = threading.Thread(target=listen, args=(sessionCookie,))
+			# listenerThread.daemon = True
 			# listenerThread.start()
 
 			try:
 				endpoint = "ws://" + status.host + "/api/" + status.dronename + "/audio/stream/upload"
-				ws = create_connection("ws://" + status.host + "/api/" + status.dronename + "/audio/stream/upload", cookie="session=" + session)
+				ws = create_connection(endpoint, cookie="session=" + session)
 			except:
-				print("Could not connect to websocket " + endpoint)
+				#print("Could not connect to websocket " + endpoint)
 				continue
 
+			# Receive initial response from the server
 			result = ws.recv()
-			print "Received '%s'" % result
+			#print "Received '%s'" % result
 
 			while streamingAudio:
 				# little endian, signed short
+				# Same principle as saving wav file, but is sent on websocket
 				try:
 					snd_data = array('h', stream.read(CHUNK_SIZE))
 					if byteorder == 'big':
@@ -260,7 +266,7 @@ def streamAudio(status, statusLock, sessionCookie):
 			stream.stop_stream()
 			stream.close()
 			p.terminate()
-			print("Stopping audio stream.")
+			#print("Stopping audio stream.")
 
 
 

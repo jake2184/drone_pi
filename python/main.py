@@ -13,28 +13,35 @@ class GPS:
 		self.longitude = 0.0
 		self.altitude = 0.0
 
-
+# Status object for Pi, with default values
 class Status:
 	def __init__(self):
-		self.battery_voltage = 0.0
-		self.battery_remaining = 80
+		self.batteryVoltage = 0.0
+		self.batteryRemaining = 80
 		self.mav_status = 0
 		self.mav_mode = 0
-		self.mqtt_interval = 2000
-		self.mqtt_count = 0
+		self.mqttInterval = 1000
+		self.mqttCount = 0
 		self.home = [0.0, 0.0, 0]
+
 		self.uploadingImages = True
 		self.uploadingAudio = True
 		self.uploadingSensors = True
-		self.capturingAudio = True
+
+		self.capturingAudio = True  # This + streaming are mutex
+		self.streamingAudio = False
+		self.volumeDetection = False
+		self.audioDuration = 5000
+		self.audioSamplingFrequency = 44100
+		self.audioFileType = "mp3"
+
 		self.capturingImages = True
 		self.photoInterval = 1000
-		self.streamingAudio = False
-		self.host = ""
-		self.volumeDetection = False
-		self.duration = 5000
 		self.photoResolution = "854x480"
 		self.photoQuality = 75
+
+		self.host = ""
+
 
 
 class Sensors:
@@ -82,7 +89,7 @@ def dummyGPS(GPSLock, GPS, direction):
 
 
 if __name__ == '__main__':
-
+	# Initialise status
 	status = Status()
 	status.host = sys.argv[1]
 	status.username = sys.argv[2]
@@ -91,7 +98,6 @@ if __name__ == '__main__':
 	direction = sys.argv[5]
 
 	port = ""
-
 	url = "http://" + status.host
 
 
@@ -113,10 +119,11 @@ if __name__ == '__main__':
 
 	sensors = Sensors()
 
-
-	mavCommandList = Queue.Queue() # Thread Safe FIFO
+	# Thread Safe FIFOs
+	mavCommandList = Queue.Queue()
 	piCommandList = Queue.Queue()
 
+	# Locks for respective objects
 	GPSLock = threading.Lock()
 	sensorLock = threading.Lock()
 	statusLock = threading.Lock()
@@ -124,6 +131,7 @@ if __name__ == '__main__':
 
 	# Thread to read Pi-attached sensors
 	sensorThread = threading.Thread(target=dummySensorReadLoop, args=(sensors, sensorLock))
+	#sensorThread = threading.Thread(target=sensorReadLoop, args=(sensors, sensorLock))
 	sensorThread.daemon = True
 	sensorThread.start()
 
@@ -158,13 +166,17 @@ if __name__ == '__main__':
 	mqttThread.daemon = True
 	mqttThread.start()
 
+	# BLOCKING call to generate dummy GPS data
 	dummyGPS(GPSLock, gps, direction)
 
+	# Thread for streaming audio to server
 	streamingThread = threading.Thread(target=streamAudio, args=(status, statusLock, sessionCookie))
 	streamingThread.daemon = True
 	#streamingThread.start()
 
+
 	while True:
+		# Handle any Pi commands received from MQTT
 		if piCommandList.qsize() > 0:
 			command = piCommandList.get()
 			#comtime = int(time.time() * 1000)
@@ -193,7 +205,7 @@ if __name__ == '__main__':
 					status.streamingAudio = command.args[0]
 					status.capturingAudio = not status.streamingAudio
 				elif command.name == "duration":
-					status.duration = command.args[0]
+					status.audioDuration = command.args[0]
 				else:
 					print("Unknown command " + command.name)
 

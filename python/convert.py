@@ -1,6 +1,7 @@
 
 
-
+# Converts a number into a float representation
+# Due to tricky format of Mavlink
 def convert(number):
     number = int(number)
     number = "{0:b}".format(number)
