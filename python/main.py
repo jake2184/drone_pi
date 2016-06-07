@@ -184,30 +184,32 @@ if __name__ == '__main__':
 			print(command)
 			# TODO Args will be parsed as a float. If that fails, as a string
 
-			with statusLock:
-				# Could change some to work on status.__dict__
-				if command.name == "uploadingImages":
-					status.uploadingImages = command.args[0]
-				elif command.name == "uploadingSensors":
-					status.uploadingSensors = command.args[0]
-				elif command.name == "capturingImages":
-					status.capturingImages = command.args[0]
-				elif command.name == "photoInterval":
-					status.photoInterval = command.args[0]
-				elif command.name == "mqttInterval":
-					status.mqttInterval = command.args[0]
-				elif command.name == "capturingAudio":
-					status.capturingAudio = command.args[0]
-					status.streamingAudio = not status.capturingAudio
-				elif command.name == "uploadingAudio":
-					status.uploadingAudio = command.args[0]
-				elif command.name == "streamingAudio":
-					status.streamingAudio = command.args[0]
-					status.capturingAudio = not status.streamingAudio
-				elif command.name == "duration":
-					status.audioDuration = command.args[0]
-				else:
-					print("Unknown command " + command.name)
+			#with statusLock:
+
+			# Could change some to work on status.__dict__
+			if command.name == "uploadingImages":
+				status.uploadingImages = command.args[0]
+			elif command.name == "uploadingSensors":
+				status.uploadingSensors = command.args[0]
+			elif command.name == "capturingImages":
+				status.capturingImages = command.args[0]
+			elif command.name == "photoInterval":
+				status.photoInterval = command.args[0]
+			elif command.name == "mqttInterval":
+				status.mqttInterval = command.args[0]
+			elif command.name == "capturingAudio":
+				status.capturingAudio = command.args[0]
+				status.streamingAudio = not status.capturingAudio
+			elif command.name == "uploadingAudio":
+				status.uploadingAudio = command.args[0]
+			elif command.name == "streamingAudio":
+				print("Changin")
+				status.streamingAudio = command.args[0]
+				status.capturingAudio = not status.streamingAudio
+			elif command.name == "duration":
+				status.audioDuration = command.args[0]
+			else:
+				print("Unknown command " + command.name)
 
 		time.sleep(0.5)
 

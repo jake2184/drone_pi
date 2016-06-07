@@ -5,6 +5,7 @@ from os import listdir
 import time
 from copy import copy
 
+
 # Repeatedly send latest audio file to the server
 def send_latest_audio(url, port, sessionCookie, gps, GPSLock, status, statusLock):
 	# The API endpoint to send to
@@ -31,10 +32,12 @@ def send_latest_audio(url, port, sessionCookie, gps, GPSLock, status, statusLock
 					GPSData = copy(gps)
 				# Try and catch to handle communication loss
 				# If a file is not sent, rather than retrying move onto next file
+				GPSData.location = [GPSData.latitude, GPSData.longitude]
 				try:
+
 					req = requests.post(url+port+endPoint+ fileToSend[:-4], data=GPSData.__dict__, files=files, cookies=sessionCookie)
 					if req.status_code == 200:
-						#print("Sent " + fileToSend)
+						print("Sent " + fileToSend)
 						pass
 					else:
 						#print("Failed to send " + fileToSend)
@@ -44,6 +47,7 @@ def send_latest_audio(url, port, sessionCookie, gps, GPSLock, status, statusLock
 						continue
 		# Sleep to prevent this thread maxing CPU if not sending
 		time.sleep(0.1)
+
 
 # Repeatedly send latest image file to the server
 def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock):
@@ -70,6 +74,7 @@ def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock
 				with GPSLock:
 					GPSData = copy(gps)
 				try:
+					GPSData.location = [GPSData.latitude, GPSData.longitude]
 					req = requests.post(url+port+endPoint+ fileToSend[:-4], data=GPSData.__dict__, files=files, cookies=sessionCookie)
 					if req.status_code == 200:
 						print("Sent " + fileToSend)
@@ -81,6 +86,7 @@ def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock
 
 
 		time.sleep(0.1)
+
 
 # Similar to send images, but loop over static images from test dir
 def send_test_images(url, port, sessionCookie, gps, GPSLock, status, statusLock):
@@ -103,7 +109,9 @@ def send_test_images(url, port, sessionCookie, gps, GPSLock, status, statusLock)
 					with GPSLock:
 						GPSData = copy(gps)
 
+
 					try:
+						GPSData.location = [GPSData.latitude, GPSData.longitude]
 						req = requests.post(url + port + endPoint + str(int(time.time()*1000)), data=GPSData.__dict__, files=files, cookies=sessionCookie)
 						if req.status_code == 200:
 							print("Sent " + fileToSend)
