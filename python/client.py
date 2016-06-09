@@ -28,7 +28,9 @@ class mqttClient:
 
 	def commandCallback(self, cmd):
 		print("Command: %s" % cmd.data)
-
+		if not 'name' in cmd.data or not 'args' in cmd.data:
+			print("Invalid command provided.")
+			return
 		if cmd.command == "piCommand":
 			self.piCommandList.put(MavCommand(cmd.data['name'], cmd.data['args']))
 		elif cmd.command == "mavCommand":
