@@ -110,7 +110,6 @@ if __name__ == '__main__':
 
 	# Try logging in
 	req = requests.post(url +  "/login", auth=HTTPBasicAuth(status.username, status.password))
-	print(str(req.status_code) + " " + str(req.cookies))
 	sessionCookie = req.cookies
 
 	gps = GPS()
