@@ -137,7 +137,7 @@ if __name__ == '__main__':
 	# Thread to communicate with drone
 	droneThread = threading.Thread(target=mavLoop, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList))
 	droneThread.daemon = True
-	#droneThread.start()
+	droneThread.start()
 
 	# Thread to capture photos
 	imageThread = threading.Thread(target=takePhotos, args=(status, statusLock))
@@ -181,9 +181,24 @@ if __name__ == '__main__':
 		# Handle any Pi commands received from MQTT
 		if piCommandList.qsize() > 0:
 			command = piCommandList.get()
-			print(command.name)
+			print("Implementing Command: " + command.name + " " + str(command.args))
 
 			with statusLock:
+
+				if command.name in status.__dict__.keys():
+					setattr(status, command.name, command.args[0])
+
+					# Special Mutex
+					if command.name == "streamingAudio":
+						status.capturingAudio = not status.streamingAudio
+					elif command.name == "capturingAudio":
+						status.streamingAudio = not status.capturingAudio
+
+				else:
+					print("Unknown command " + command.name)
+
+
+				'''
 				# Could change some to work on status.__dict__
 				if command.name == "uploadingImages":
 					status.uploadingImages = command.args[0]
@@ -207,6 +222,7 @@ if __name__ == '__main__':
 					status.audioDuration = command.args[0]
 				else:
 					print("Unknown command " + command.name)
+				'''
 
 		time.sleep(0.5)
 

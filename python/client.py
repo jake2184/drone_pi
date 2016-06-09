@@ -36,7 +36,7 @@ class mqttClient:
 		elif cmd.command == "mavCommand":
 			self.mavCommandList.put(MavCommand(cmd.data['name'], cmd.data['args']))
 		else:
-			print ("Unknown command: " % cmd.command)
+			print ("Unknown command type: " % cmd.command)
 
 	def sendSensorReadings(self, GPSData, sensorData, status, statusLock):
 		# TODO add condition to set to none if time of reading is old

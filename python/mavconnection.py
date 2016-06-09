@@ -36,10 +36,17 @@ class Parameter:
 class MavConnection:
 	def __init__(self):
 		# create a mavlink serial instance
-		device = "com4" #TODO change on Pi
+		from sys import platform as _platform
+
+		if _platform == "win32":
+			device = 'com4'
+		else:
+			device = '/dev/ttyAMA0'
+
 		self.master = mavutil.mavlink_connection(device, 57600, dialect="pixhawk")
 		self.ts = self.master.target_system
 		self.tc = self.master.target_component
+		print(str(self.ts) + " " + str(self.tc))
 
 		self.GPSLock = None
 		self.sensorLock = None
@@ -85,9 +92,9 @@ class MavConnection:
 		}
 
 	def wait_heartbeat(self):
-		#print("Waiting for heartbeat")
+		print("Waiting for heartbeat")
 		self.master.wait_heartbeat()
-		#print("Got Heartbeat")
+		print("Got Heartbeat")
 
 	def closeLink(self):
 		#print("Ending")
@@ -246,7 +253,7 @@ class MavConnection:
 					# self.log(msg)
 					pass
 				elif t == "ATTITUDE": # roll/pitch/yaw
-					self.log(msg)
+					#self.log(msg)
 					pass
 				elif t == "HOME_POSITION":
 					self.updateStatus(msg)
