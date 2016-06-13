@@ -119,6 +119,8 @@ if __name__ == '__main__':
 	req = requests.post(url +  "/login", auth=HTTPBasicAuth(status.username, status.password))
 	sessionCookie = req.cookies
 
+	req = requests.post(url + "/api/" + status.dronename + "/reset")
+
 	gps = GPS()
 	gps.longitude = -0.18
 	gps.latitude = 51.5
