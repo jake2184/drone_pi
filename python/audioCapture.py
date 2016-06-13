@@ -88,11 +88,11 @@ def record(volumeDetection, duration):
 			frames_per_buffer=CHUNK_SIZE)
 	except:
 		return [], []
-	p = pyaudio.PyAudio()
+	#p = pyaudio.PyAudio()
 
-	stream = p.open(format=FORMAT, channels=1, rate=RATE,
-		input=True, output=True,
-		frames_per_buffer=CHUNK_SIZE)
+	#stream = p.open(format=FORMAT, channels=1, rate=RATE,
+	#	input=True, output=True,
+	#	frames_per_buffer=CHUNK_SIZE)
 
 	num_silent = 0
 	snd_started = False
@@ -102,7 +102,10 @@ def record(volumeDetection, duration):
 	if volumeDetection :
 		while 1:
 			# little endian, signed short
-			snd_data = array('h', stream.read(CHUNK_SIZE))
+			try:
+				snd_data = array('h', stream.read(CHUNK_SIZE))
+			except:
+				continue
 			if byteorder == 'big':
 				snd_data.byteswap()
 			r.extend(snd_data)
@@ -122,7 +125,10 @@ def record(volumeDetection, duration):
 		timeNow = timeBegin
 		while timeNow - timeBegin < duration / 1000.0 :
 			# little endian, signed short
-			snd_data = array('h', stream.read(CHUNK_SIZE))
+			try:
+				snd_data = array('h', stream.read(CHUNK_SIZE))
+			except:
+				continue
 			if byteorder == 'big':
 				snd_data.byteswap()
 			r.extend(snd_data)
@@ -144,7 +150,8 @@ def record(volumeDetection, duration):
 # Use ffmpeg to write to file
 def writeMP3File(fileName, data):
 	pipe = sp.Popen([
-		"ffmpeg\\bin\\ffmpeg.exe", # TODO change for pi
+		#"ffmpeg\\bin\\ffmpeg.exe", # TODO change for pi
+		"ffmpeg", 
 		"-f", 's16le', # 16bit input
 		"-acodec", "pcm_s16le", # raw 16bit input
 		'-r', "44100", # sampling frequency

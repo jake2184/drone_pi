@@ -50,7 +50,7 @@ class mqttClient:
 		}
 
 		self.client.publishEvent("sensors", "json", sensorReadings)
-
+		print(sensorReadings)
 		with statusLock:
 			status.mqttCount += 1
 			#print(status.mqttCount)
