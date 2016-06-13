@@ -92,7 +92,10 @@ def record(volumeDetection, duration):
 		stream = p.open(format=FORMAT, channels=1, rate=RATE,
 			input=True, output=True,
 			frames_per_buffer=CHUNK_SIZE)
-	except:
+	except IOError as e:
+		if e.errno == -9996:
+			# No microphone, thread should exit
+			exit(1)
 		return [], []
 
 	num_silent = 0
@@ -167,6 +170,8 @@ def writeMP3File(fileName, data):
 # Record audio to file
 def record_to_file(path, format, volumeDetection, duration):
 	sample_width, data = record(volumeDetection, duration)
+	if not data:
+		return
 	data = pack('<' + ('h'*len(data)), *data)
 	currentTime = int(time.time() * 1000)
 
@@ -278,6 +283,8 @@ def streamAudio(status, statusLock, sessionCookie):
 			stream.close()
 			p.terminate()
 			#print("Stopping audio stream.")
+		else:
+			time.sleep(1)
 
 
 

@@ -5,6 +5,10 @@ import sys, os
 import atexit
 import time
 import Queue, threading
+import random
+
+import math
+import serial
 from pymavlink import mavutil
 from convert import convert
 from main import GPS, Sensors, Status
@@ -42,8 +46,12 @@ class MavConnection:
 			device = 'com4'
 		else:
 			device = '/dev/ttyAMA0'
+		try:
+			self.master = mavutil.mavlink_connection(device, 57600, dialect="pixhawk")
+		except serial.SerialException:
+			print("No MAVLINK serial connection")
+			exit(1)
 
-		self.master = mavutil.mavlink_connection(device, 57600, dialect="pixhawk")
 		self.ts = self.master.target_system
 		self.tc = self.master.target_component
 		print(str(self.ts) + " " + str(self.tc))
@@ -83,7 +91,8 @@ class MavConnection:
 			"isArmed" : self.master.motors_armed,
 			"setRCChan" : self.setRCChan,
 			"getMode" : self.getMode,
-			"hover" : self.master.set_mode_loiter,
+			"hover" : self.startHover,
+			"continue" : self.stopHover,
 			"raiseAltitude" : self.raiseAltitude,
 			"takeoff" : self.takeoff,
 			"setAuto" : self.master.set_mode_auto,
@@ -99,6 +108,16 @@ class MavConnection:
 	def closeLink(self):
 		#print("Ending")
 		self.master.close()
+
+	def startHover(self):
+		with self.statusLock:
+			self.status.hovering = True
+		self.master.set_mode_loiter()
+
+	def stopHover(self):
+		with self.statusLock:
+			self.status.hovering = False
+		# Continue automated waypoints
 
 	# Logging function
 	def log(self, msg):
@@ -180,14 +199,14 @@ class MavConnection:
 		t = msg.get_type()
 		with self.statusLock:
 			if t == "HEARTBEAT":
-				self.status.mav_mode = msg.base_mode
-				self.status.mav_status = msg.system_status
+				self.status.mavMode = msg.base_mode
+				self.status.mavStatus = msg.system_status
 			elif t == "SYS_STATUS":
-				self.status.battery_voltage = msg.voltage_battery
+				self.status.batteryVoltage = msg.voltage_battery
 			elif t == "BATTERY_STATUS":
-				self.status.battery_remaining = msg.battery_remaining
+				self.status.batteryRemaining = msg.battery_remaining
 			elif t == "HOME_POSITION":
-				self.status.home_position = [msg.latitude / 1000000.0, msg.longitude / 10000000.0,
+				self.status.homePosition = [msg.latitude / 1000000.0, msg.longitude / 10000000.0,
 											 msg.altitude / 1000.0]
 			else:
 				print("Unknown status update type: " + t)
@@ -308,6 +327,7 @@ class MavConnection:
 			else:
 				time.sleep(0.1)
 
+
 # Create connection, start monitoring messages
 def mavLoop(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList):
 	mavlink = MavConnection()
@@ -316,6 +336,44 @@ def mavLoop(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandLis
 	mavlink.statusLock = statusLock
 	mavlink.monitorMessages(gps, sensors, status, mavCommandList)
 
+
+def dummyMavLoop(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, direction):
+	with statusLock:
+		status.mavMode = 0
+		status.mavStatus = 0
+		status.batteryVoltage = 12
+		status.batteryRemaining = 80
+		status.homePosition = [51.498834, -0.177371, 50]
+
+	with sensorLock:
+		sensors.heading = calcHeading(direction[0], direction[1])
+
+	while True:
+		with GPSLock:
+			gps.time = int(time.time() * 1000)
+			if not status.hovering:
+				gps.latitude += float(direction[0]) * 0.00005
+				gps.longitude += float(direction[1]) * 0.00005
+		with sensorLock:
+			sensors.altitude = 100 + (random.random() - 0.5) * 10
+
+		if mavCommandList.qsize() > 0:
+			print("Sending command")
+			mavCommand = mavCommandList.get()
+			if mavCommand.name == 'hover':
+				with statusLock:
+					status.hovering = True
+			elif mavCommand.name == 'continue':
+				with statusLock:
+					status.hovering = False
+
+
+
+		time.sleep(0.5)
+
+
+def calcHeading(x, y):
+	return (math.degrees(math.atan2(float(x), float(y)))+360)%360
 
 if __name__ == '__main__':
 	#os.environ['MAVLINK_DIALECT'] = 'pixhawk'

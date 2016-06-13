@@ -18,11 +18,11 @@ class Status:
 	def __init__(self):
 		self.batteryVoltage = 0.0
 		self.batteryRemaining = 80
-		self.mav_status = 0
-		self.mav_mode = 0
+		self.mavStatus = 0
+		self.mavMode = 0
 		self.mqttInterval = 1000
 		self.mqttCount = 0
-		self.home = [0.0, 0.0, 0]
+		self.homePosition = [0.0, 0.0, 0]
 
 		self.uploadingImages = True
 		self.uploadingAudio = True
@@ -41,7 +41,9 @@ class Status:
 		self.photoQuality = 75
 
 		self.host = ""
+		self.hovering = False
 
+		self.running = True
 
 
 class Sensors:
@@ -75,16 +77,16 @@ from imageCapture import takePhotos
 from sensorRead import sensorReadLoop
 from sensorRead import dummySensorReadLoop
 from client import runIot
-from mavconnection import mavLoop
+from mavconnection import mavLoop, dummyMavLoop
 from fileSend import send_test_images
 
 
-def dummyGPS(GPSLock, GPS, direction):
+def dummyGPS(GPSLock, GPS, directions):
 	while True:
 		with GPSLock:
 			GPS.time = int(time.time()*1000)
-			GPS.latitude += float(direction) * 0.00005
-			GPS.longitude += float(direction) * 0.00005
+			GPS.latitude += float(directions[0]) * 0.00005
+			GPS.longitude += float(directions[1]) * 0.00005
 		time.sleep(1)
 
 
@@ -95,9 +97,11 @@ if __name__ == '__main__':
 	status.username = sys.argv[2]
 	status.password = sys.argv[3]
 	status.dronename = sys.argv[4]
-	direction = sys.argv[5]
+	dummyData = sys.argv[5]
 
-	port = ""
+	if dummyData:
+		direction = [sys.argv[6], sys.argv[7]]
+
 	if "192" in status.host:
 		url = "http://" + status.host
 	else:
@@ -132,55 +136,57 @@ if __name__ == '__main__':
 
 
 	# Thread to read Pi-attached sensors
-	sensorThread = threading.Thread(target=dummySensorReadLoop, args=(sensors, sensorLock))
-	#sensorThread = threading.Thread(target=sensorReadLoop, args=(sensors, sensorLock))
+	if dummyData:
+		sensorThread = threading.Thread(name="sensorThread", target=dummySensorReadLoop, args=(sensors, sensorLock))
+	else:
+		sensorThread = threading.Thread(name="sensorThread", target=sensorReadLoop, args=(sensors, sensorLock))
 	sensorThread.daemon = True
 	sensorThread.start()
 
 	# Thread to communicate with drone
-	droneThread = threading.Thread(target=mavLoop, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList))
+	if dummyData:
+		droneThread = threading.Thread(name="droneThread", target=dummyMavLoop, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, direction))
+	else:
+		droneThread = threading.Thread(name="droneThread", target=mavLoop, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList))
 	droneThread.daemon = True
 	droneThread.start()
 
 	# Thread to capture photos
-	imageThread = threading.Thread(target=takePhotos, args=(status, statusLock))
+	imageThread = threading.Thread(name="imageThread", target=takePhotos, args=(status, statusLock))
 	imageThread.daemon = True
-	imageThread.start()
+	if not dummyData:
+		imageThread.start()
 
-	# Thread to capture audio
-	audioThread = threading.Thread(target=runAudioCapture, args=(status, statusLock))
+	# Thread to capture audio - assume we have audio capability on dummy
+	audioThread = threading.Thread(name="audioThread", target=runAudioCapture, args=(status, statusLock))
 	audioThread.daemon = True
 	audioThread.start()
 
 	# Thread to upload images
-	#imageUploadThread = threading.Thread(target=send_test_images, args=(url, port, sessionCookie, gps, GPSLock, status, statusLock))
-	imageUploadThread = threading.Thread(target=send_latest_image, args=(url, port, sessionCookie, gps, GPSLock, status, statusLock))
+	if dummyData:
+		imageUploadThread = threading.Thread(name="imageUploadThread", target=send_test_images, args=(url, "", sessionCookie, gps, GPSLock, status, statusLock))
+	else:
+		imageUploadThread = threading.Thread(name="imageUploadThread", target=send_latest_image, args=(url, "", sessionCookie, gps, GPSLock, status, statusLock))
 	imageUploadThread.daemon = True
 	imageUploadThread.start()
 
 	# Thread to upload audio
-	audioUploadThread = threading.Thread(target=send_latest_audio, args=(url, port, sessionCookie, gps, GPSLock, status, statusLock))
+	audioUploadThread = threading.Thread(name="audioUploadThread", target=send_latest_audio, args=(url, "", sessionCookie, gps, GPSLock, status, statusLock))
 	audioUploadThread.daemon = True
 	audioUploadThread.start()
 
 	# Thread to regularly send/receive data
-	mqttThread = threading.Thread(target=runIot, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, piCommandList))
+	mqttThread = threading.Thread(name="mqttThread", target=runIot, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, piCommandList))
 	mqttThread.daemon = True
 	mqttThread.start()
 
-
-
 	# Thread for streaming audio to server
-	streamingThread = threading.Thread(target=streamAudio, args=(status, statusLock, sessionCookie))
+	streamingThread = threading.Thread(name="streamingThread", target=streamAudio, args=(status, statusLock, sessionCookie))
 	streamingThread.daemon = True
-	#streamingThread.start()
+	streamingThread.start()
 
-	dummyThread = threading.Thread(target=dummyGPS, args=(GPSLock, gps, direction))
-	dummyThread.daemon = True
-	dummyThread.start()
-
-
-	while True:
+	start = time.time()
+	while status.running:
 		# Handle any Pi commands received from MQTT
 		if piCommandList.qsize() > 0:
 			command = piCommandList.get()
@@ -229,4 +235,8 @@ if __name__ == '__main__':
 
 		time.sleep(0.5)
 
+		if time.time() - start > 10:
+			pass
+			#print("Stopping")
+			#status.running = False
 

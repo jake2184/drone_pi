@@ -18,5 +18,7 @@ dpkg -i ffmpeg_2.8.3.git325b593-1_armhf.deb
 2. Download source code with `git clone https://github.com/jake2184/drone_pi.git`, and cd into directory
 
 3. Run system with:
-`python python/main.py <hostname> <username> <password> <dronename> <dummyDirection>`
-Dummy direction can be replaced with 1 if its use is not desired.
+`python python/main.py <hostname> <username> <password> <dronename> <dummyData> [<dummyX>] [<dummyY>]`
+dummyData will trigger 'dummy mode', indicating whether to capture images and use real data, or fake data.
+
+dummyX and dummyY are the direction and speed of the drone in dummy mode.

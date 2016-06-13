@@ -27,7 +27,7 @@ class mqttClient:
 			print (e)
 
 	def commandCallback(self, cmd):
-		print("Command: %s" % cmd.data)
+		print("Received " + cmd.command + ": %s" % cmd.data)
 		if not 'name' in cmd.data or not 'args' in cmd.data:
 			print("Invalid command provided.")
 			return
@@ -50,15 +50,19 @@ class mqttClient:
 		}
 
 		self.client.publishEvent("sensors", "json", sensorReadings)
-		print(sensorReadings)
+		#print(sensorReadings)
 		with statusLock:
 			status.mqttCount += 1
 			#print(status.mqttCount)
 
 	def sendStatus(self, status):
 		status.time = int(time.time()*1000)
-		del status.password
-		self.client.publishEvent("status", "json", status.__dict__)
+		toSend = status.__dict__
+		try:
+			del toSend.password
+		except AttributeError:
+			pass
+		self.client.publishEvent("status", "json", toSend)
 
 
 
