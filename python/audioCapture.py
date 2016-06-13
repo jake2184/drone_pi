@@ -23,6 +23,12 @@ FORMAT = pyaudio.paInt16
 RATE = 44100 #TODO set from status
 
 
+from sys import platform as _platform
+if _platform =="win32":
+	ffmpeg = "ffmpeg\\bin\\ffmpeg.exe"
+else:
+	ffmpeg = "ffmpeg"
+
 def is_silent(snd_data):
 	"Returns 'True' if below the 'silent' threshold"
 	return max(snd_data) < THRESHOLD
@@ -88,11 +94,6 @@ def record(volumeDetection, duration):
 			frames_per_buffer=CHUNK_SIZE)
 	except:
 		return [], []
-	#p = pyaudio.PyAudio()
-
-	#stream = p.open(format=FORMAT, channels=1, rate=RATE,
-	#	input=True, output=True,
-	#	frames_per_buffer=CHUNK_SIZE)
 
 	num_silent = 0
 	snd_started = False
@@ -150,8 +151,7 @@ def record(volumeDetection, duration):
 # Use ffmpeg to write to file
 def writeMP3File(fileName, data):
 	pipe = sp.Popen([
-		#"ffmpeg\\bin\\ffmpeg.exe", # TODO change for pi
-		"ffmpeg", 
+		ffmpeg,
 		"-f", 's16le', # 16bit input
 		"-acodec", "pcm_s16le", # raw 16bit input
 		'-r', "44100", # sampling frequency
@@ -243,7 +243,12 @@ def streamAudio(status, statusLock, sessionCookie):
 			# listenerThread.start()
 
 			try:
-				endpoint = "ws://" + status.host + "/api/" + status.dronename + "/audio/stream/upload"
+				if "192" in status.host:
+					protocol = "ws://"
+				else:
+					protocol = "wss://"
+
+				endpoint = protocol + status.host + "/api/" + status.dronename + "/audio/stream/upload"
 				ws = create_connection(endpoint, cookie="session=" + session)
 			except:
 				#print("Could not connect to websocket " + endpoint)
@@ -251,7 +256,6 @@ def streamAudio(status, statusLock, sessionCookie):
 
 			# Receive initial response from the server
 			result = ws.recv()
-			#print "Received '%s'" % result
 
 			while streamingAudio:
 				# little endian, signed short
@@ -280,9 +284,6 @@ def streamAudio(status, statusLock, sessionCookie):
 
 
 if __name__ == '__main__':
-	#print("please speak a word into the microphone")
-	#record_to_file('audio', "mp3")
-	#print("done - result written to demo.wav")
 	from main import Status
 	import requests, sys
 	from requests.auth import HTTPBasicAuth

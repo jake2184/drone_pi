@@ -98,7 +98,10 @@ if __name__ == '__main__':
 	direction = sys.argv[5]
 
 	port = ""
-	url = "https://" + status.host
+	if "192" in status.host:
+		url = "http://" + status.host
+	else:
+		url = "https://" + status.host
 
 
 	# Check we can connect to Bluemix
