@@ -348,6 +348,7 @@ def dummyMavLoop(gps, GPSLock, sensors, sensorLock, status, statusLock, mavComma
 	with sensorLock:
 		sensors.heading = calcHeading(direction[0], direction[1])
 
+
 	while True:
 		with GPSLock:
 			gps.time = int(time.time() * 1000)
@@ -366,9 +367,6 @@ def dummyMavLoop(gps, GPSLock, sensors, sensorLock, status, statusLock, mavComma
 			elif mavCommand.name == 'continue':
 				with statusLock:
 					status.hovering = False
-
-
-
 		time.sleep(0.5)
 
 

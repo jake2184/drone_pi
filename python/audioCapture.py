@@ -171,6 +171,8 @@ def writeMP3File(fileName, data):
 def record_to_file(path, format, volumeDetection, duration):
 	sample_width, data = record(volumeDetection, duration)
 	if not data:
+		# Likely caused by no mic
+		time.sleep(1)
 		return
 	data = pack('<' + ('h'*len(data)), *data)
 	currentTime = int(time.time() * 1000)
@@ -216,10 +218,9 @@ def runAudioCapture(status, statusLock):
 			duration = copy(status.audioDuration)
 			fileType = copy(status.audioFileType)
 
-
 		if capturingAudio:
 			record_to_file("audio", fileType, volumeDetection, duration)
-			#print ("Made recording")
+			print ("Made recording")
 		else:
 			time.sleep(1)
 

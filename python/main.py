@@ -110,16 +110,19 @@ if __name__ == '__main__':
 
 	# Check we can connect to Bluemix
 	try:
+		print("Connecting..")
 		req = requests.get(url + "/login", timeout=2)
 	except requests.exceptions.RequestException:
 		print ("Cannot connect to " + url )
 		sys.exit(0)
 
 	# Try logging in
-	req = requests.post(url +  "/login", auth=HTTPBasicAuth(status.username, status.password))
+	print("Logging in..")
+	req = requests.post(url + "/login", auth=HTTPBasicAuth(status.username, status.password))
 	sessionCookie = req.cookies
-
+	print("Resetting..")
 	req = requests.post(url + "/api/" + status.dronename + "/reset")
+	print("Starting..")
 
 	gps = GPS()
 	gps.longitude = -0.18
@@ -135,7 +138,6 @@ if __name__ == '__main__':
 	GPSLock = threading.Lock()
 	sensorLock = threading.Lock()
 	statusLock = threading.Lock()
-
 
 	# Thread to read Pi-attached sensors
 	if dummyData:
