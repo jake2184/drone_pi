@@ -45,7 +45,10 @@ def sensorReadLoop(sensors, sensorLock):
     os.system('modprobe w1-gpio')
     os.system('modprobe w1-therm')
     base_dir = '/sys/bus/w1/temp_devices/'
-    temp_device_folder = glob.glob(base_dir + '28*')[0]
+    try:
+        temp_device_folder = glob.glob(base_dir + '28*')[0]
+    except IndexError:
+        dummySensorReadLoop(sensors, sensorLock)
     temp_device_file = temp_device_folder + '/w1_slave'
 
     # Loop reading sensors
