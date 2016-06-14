@@ -97,7 +97,7 @@ if __name__ == '__main__':
 	status.username = sys.argv[2]
 	status.password = sys.argv[3]
 	status.dronename = sys.argv[4]
-	dummyData = sys.argv[5]
+	dummyData = int(sys.argv[5])
 
 	if dummyData:
 		direction = [sys.argv[6], sys.argv[7]]
