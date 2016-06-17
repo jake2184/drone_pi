@@ -99,8 +99,8 @@ if __name__ == '__main__':
 	status.dronename = sys.argv[4]
 	dummyData = int(sys.argv[5])
 
-	if dummyData:
-		direction = [sys.argv[6], sys.argv[7]]
+	#if dummyData:
+	direction = [sys.argv[6], sys.argv[7]]
 
 	if "192" in status.host:
 		url = "http://" + status.host
@@ -138,6 +138,24 @@ if __name__ == '__main__':
 	GPSLock = threading.Lock()
 	sensorLock = threading.Lock()
 	statusLock = threading.Lock()
+
+	import os
+	folder = './audio'
+	for the_file in os.listdir(folder):
+		file_path = os.path.join(folder, the_file)
+		try:
+			if os.path.isfile(file_path):
+				os.unlink(file_path)
+		except Exception as e:
+			print(e)
+	folder = './photos'
+	for the_file in os.listdir(folder):
+		file_path = os.path.join(folder, the_file)
+		try:
+			if os.path.isfile(file_path):
+				os.unlink(file_path)
+		except Exception as e:
+			print(e)
 
 	# Thread to read Pi-attached sensors
 	if dummyData:
