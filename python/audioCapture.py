@@ -177,17 +177,17 @@ def record_to_file(path, format, volumeDetection, duration):
 	data = pack('<' + ('h'*len(data)), *data)
 	currentTime = int(time.time() * 1000)
 
+	fileName = path + "/" + str(currentTime)
 	if format == "mp3":
-		fileName = path + "/" + str(currentTime) + ".mp3"
-		writeMP3File(fileName, data)
+		writeMP3File(fileName + ".mp3", data)
 	else:
-		wf = wave.open(path + "/" + str(currentTime) + ".wav" , 'wb')
+		wf = wave.open(fileName + ".wav" , 'wb')
 		wf.setnchannels(1)
 		wf.setsampwidth(sample_width)
 		wf.setframerate(RATE)
 		wf.writeframes(data)
 		wf.close()
-
+	print ("Made recording " + fileName)
 
 def listen(sessionCookie):
 	wf = wave.open("dump.wav", 'wb')
@@ -220,7 +220,6 @@ def runAudioCapture(status, statusLock):
 
 		if capturingAudio:
 			record_to_file("audio", fileType, volumeDetection, duration)
-			print ("Made recording")
 		else:
 			time.sleep(1)
 

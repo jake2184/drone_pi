@@ -121,7 +121,7 @@ if __name__ == '__main__':
 	req = requests.post(url + "/login", auth=HTTPBasicAuth(status.username, status.password))
 	sessionCookie = req.cookies
 	print("Resetting..")
-	req = requests.post(url + "/api/" + status.dronename + "/reset")
+	req = requests.post(url + "/api/" + status.dronename + "/reset", cookies=sessionCookie)
 	print("Starting..")
 
 	gps = GPS()
@@ -148,10 +148,11 @@ if __name__ == '__main__':
 	sensorThread.start()
 
 	# Thread to communicate with drone
-	if dummyData:
-		droneThread = threading.Thread(name="droneThread", target=dummyMavLoop, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, direction))
-	else:
-		droneThread = threading.Thread(name="droneThread", target=mavLoop, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList))
+	#if dummyData:
+	#	droneThread = threading.Thread(name="droneThread", target=dummyMavLoop, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, direction))
+	#else:
+	#	droneThread = threading.Thread(name="droneThread", target=mavLoop, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList))
+	droneThread = threading.Thread(name="droneThread", target=dummyMavLoop, args=(gps, GPSLock, sensors, sensorLock, status, statusLock, mavCommandList, direction))
 	droneThread.daemon = True
 	droneThread.start()
 
