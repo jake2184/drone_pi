@@ -59,11 +59,13 @@ def send_latest_image(url, port, sessionCookie, gps, GPSLock, status, statusLock
 
 		with statusLock:
 			sending = copy(status.uploadingImages)
-
+			
+		for fileToSend in fileList:
+			if fileToSend.endswith('~'):
+				fileList.remove(fileToSend)
+				
 		if fileList and sending:
-			for fileToSend in fileList:
-				if fileToSend.endswith('~'):
-					fileList.remove(fileToSend)
+
 
 			fileToSend = max(fileList)
 
